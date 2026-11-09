@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SUATerFood · 深圳理工大学干饭社区</title>
+<!-- ==== Supabase 修改处 ①：CDN 引入官方 JS 客户端 ==== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+/* ============ 设计系统 ============ */
+:root{
+  --orange:#FF7A3D; --orange-d:#F2641F; --orange-l:#FF9F5A; --peach:#FFD9BF;
+  --bg:#FFF6EE; --card:#FFFFFF; --ink:#3D2B1F; --muted:#A18B7C; --line:#F3E3D3;
+  --green:#3FA46B; --red:#E85D4A; --gold:#FFB800; --radius:18px;
+  --shadow:0 6px 20px rgba(242,100,31,.10); --shadow-lg:0 14px 34px rgba(242,100,31,.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.6;
+  background-image:radial-gradient(circle at 12% 8%, rgba(255,159,90,.14) 0 180px, transparent 200px),
+                   radial-gradient(circle at 88% 30%, rgba(255,184,77,.12) 0 220px, transparent 240px);
+  min-height:100vh;
+}
+body.locked{overflow:hidden}
+button{font-family:inherit;border:none;cursor:pointer;background:none}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
+::selection{background:var(--peach)}
+::-webkit-scrollbar{height:0;width:0}
+
+/* ============ 顶部导航 ============ */
+header{
+  position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:12px;
+  padding:12px 18px;background:rgba(255,246,238,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.nav-toggle{
+  display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;
+  background:var(--ink);color:#fff;font-size:14px;font-weight:600;letter-spacing:.5px;
+  box-shadow:var(--shadow);transition:transform .18s, background .18s;
+}
+.nav-toggle:hover{background:var(--orange-d);transform:translateY(-1px)}
+.nav-toggle .caret{font-size:10px;opacity:.85;transition:transform .25s}
+.nav-toggle.open .caret{transform:rotate(180deg)}
+.logo{margin:0 auto;font-weight:900;font-size:19px;letter-spacing:.5px;white-space:nowrap}
+.logo b{color:var(--orange)}
+.cloud-dot{
+  display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);
+  padding:6px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;
+}
+.cloud-dot i{width:8px;height:8px;border-radius:50%;background:#C9C9C9;transition:background .3s}
+.cloud-dot.on i{background:var(--green);box-shadow:0 0 6px var(--green)}
+.cloud-dot.busy i{background:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.35}}
+
+/* ============ 区域抽屉导航 ============ */
+.nav-mask{position:fixed;inset:0;background:rgba(61,43,31,.42);z-index:70;opacity:0;pointer-events:none;transition:opacity .3s}
+.nav-mask.show{opacity:1;pointer-events:auto}
+.nav-panel{
+  position:fixed;top:0;left:0;bottom:0;width:290px;max-width:84vw;z-index:71;
+  background:#fff;box-shadow:var(--shadow-lg);padding:18px 14px;overflow-y:auto;
+  transform:translateX(-104%);transition:transform .32s cubic-bezier(.32,.72,.28,1);
+  border-radius:0 22px 22px 0;
+}
+.nav-panel.show{transform:translateX(0)}
+.nav-panel h3{font-size:13px;color:var(--muted);letter-spacing:2px;margin:6px 8px 12px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+  padding:11px 12px;border-radius:14px;transition:background .15s,transform .15s;margin-bottom:4px;
+}
+.nav-item:hover{background:#FFF3E8;transform:translateX(3px)}
+.nav-item.active{background:linear-gradient(120deg,var(--orange),var(--orange-l));color:#fff;box-shadow:var(--shadow)}
+.nav-item .em{font-size:22px;flex:none}
+.nav-item .nm{font-weight:700;font-size:15px}
+.nav-item .ds{font-size:11.5px;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.nav-item .ct{
+  margin-left:auto;flex:none;background:#FFF0E4;color:var(--orange-d);font-size:11px;font-weight:800;
+  padding:3px 9px;border-radius:999px;
+}
+.nav-item.active .ct{background:rgba(255,255,255,.28);color:#fff}
+.nav-add{
+  margin-top:12px;width:100%;padding:12px;border-radius:14px;border:1.5px dashed var(--orange);
+  color:var(--orange-d);font-weight:700;font-size:14px;transition:background .15s;
+}
+.nav-add:hover{background:#FFF3E8}
+.nav-tip{margin-top:16px;font-size:11.5px;color:var(--muted);padding:11px 12px;background:#FFF9F4;border-radius:12px;line-height:1.7}
+
+/* ============ 主视觉 ============ */
+.hero{max-width:1080px;margin:0 auto;padding:26px 18px 6px;text-align:center}
+.hero h1{font-size:clamp(24px,4.5vw,34px);font-weight:900;letter-spacing:1px}
+.hero h1 span{color:var(--orange)}
+.hero p.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.stats{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
+.stat{
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 18px;
+  box-shadow:var(--shadow);display:flex;align-items:baseline;gap:6px;
+}
+.stat b{font-size:19px;color:var(--orange-d);font-weight:900}
+.stat span{font-size:12px;color:var(--muted)}
+
+/* ============ 转盘 ============ */
+.wheel-zone{display:flex;flex-direction:column;align-items:center;padding:14px 12px 8px}
+.wheel-wrap{position:relative;width:min(380px,88vw)}
+.wheel-wrap svg{width:100%;height:auto;display:block;filter:drop-shadow(0 14px 26px rgba(242,100,31,.24))}
+#wheelG{transition:transform 4.8s cubic-bezier(.15,.68,.14,1);transform-origin:170px 170px}
+.sector{stroke:#fff;stroke-width:1.4}
+.sector.win{stroke:#fff;stroke-width:4;filter:brightness(1.12)}
+.wl{font-weight:800;fill:#4A2C14;pointer-events:none}
+.pointer{
+  position:absolute;top:-9px;left:50%;transform:translateX(-50%);z-index:5;
+  width:0;height:0;border:15px solid transparent;border-top:26px solid var(--orange-d);
+  filter:drop-shadow(0 4px 6px rgba(242,100,31,.4));
+}
+.pointer::after{content:'';position:absolute;top:-30px;left:-8px;width:16px;height:16px;border-radius:50%;background:var(--orange-d)}
+.wheel-hub-btn{cursor:pointer}
+.wheel-hub-btn:hover .hub{filter:brightness(1.06)}
+.wheel-guard{
+  width:min(380px,88vw);aspect-ratio:1;border-radius:50%;
+  background:repeating-conic-gradient(#FFE8D6 0 15deg,#FFF6EE 15deg 30deg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  border:8px solid #FFD9BF;box-shadow:var(--shadow-lg);text-align:center;padding:40px;
+}
+.wheel-guard b{font-size:17px;color:var(--orange-d)}
+.wheel-guard p{font-size:13px;color:var(--muted)}
+.spin-btn{
+  margin:18px auto 4px;padding:14px 46px;border-radius:999px;font-size:18px;font-weight:900;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--orange),var(--orange-l));color:#fff;
+  box-shadow:0 10px 24px rgba(242,100,31,.35);transition:transform .16s,box-shadow .16s;
+}
+.spin-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 14px 30px rgba(242,100,31,.42)}
+.spin-btn:active{transform:scale(.97)}
+.spin-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.mood-note{max-width:560px;margin:10px auto 0;font-size:12.5px;color:var(--muted)}
+
+/* ============ 板块标题 ============ */
+.area-head{max-width:1080px;margin:22px auto 4px;padding:0 20px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.area-head h2{font-size:21px;font-weight:900}
+.area-head .badge{font-size:12px;background:#FFE3CC;color:var(--orange-d);padding:3px 11px;border-radius:999px;font-weight:800}
+.area-head .desc{font-size:12.5px;color:var(--muted)}
+.content{max-width:1080px;margin:0 auto;padding:14px 20px 90px;transition:opacity .28s,transform .28s}
+.content.fading{opacity:0;transform:translateY(8px)}
+
+/* ============ 卡片瀑布流 ============ */
+.flow{columns:3;column-gap:16px}
+/* 首次拉取云端数据时的骨架态 */
+.flow.loading{opacity:.42;filter:saturate(.6);pointer-events:none;transition:opacity .25s}
+.flow.loading::after{
+  content:'☁ 正在从云端同步数据…';display:block;break-inside:avoid;
+  padding:26px 18px;margin-bottom:16px;border-radius:var(--radius);
+  background:linear-gradient(100deg,#FFF1E3 30%,#FFE3CE 50%,#FFF1E3 70%);
+  background-size:200% 100%;animation:shimmer 1.2s linear infinite;
+  color:#B0743D;font-size:13px;font-weight:600;text-align:center;
+}
+@keyframes shimmer{0%{background-position:180% 0}100%{background-position:-20% 0}}
+.food-card{
+  break-inside:avoid;margin-bottom:16px;background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;cursor:pointer;position:relative;
+  transition:transform .2s,box-shadow .2s;border:1px solid #FBEEDF;
+}
+.food-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.fc-top{display:flex;align-items:center;gap:9px}
+.fc-em{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+.fc-name{font-size:16px;font-weight:800;line-height:1.25}
+.fc-area{font-size:10.5px;color:var(--muted);margin-top:1px}
+.fc-new{position:absolute;top:12px;right:12px;font-size:10px;font-weight:800;background:var(--red);color:#fff;padding:2px 8px;border-radius:999px}
+.fc-score{margin-top:11px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fc-score .num{font-size:20px;font-weight:900;color:var(--gold)}
+.fc-score .num.zero{color:#CFC2B6;font-size:13px;font-weight:700;background:#F7EFE6;padding:2px 10px;border-radius:999px}
+.stars{position:relative;display:inline-block;font-size:14px;letter-spacing:1.5px;line-height:1;color:#E8DDD0;white-space:nowrap}
+.stars .lit{position:absolute;left:0;top:0;overflow:hidden;color:var(--gold);white-space:nowrap}
+.fc-count{font-size:11.5px;color:var(--muted)}
+.fc-chips{margin-top:9px;display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:11px;padding:2.5px 9px;border-radius:999px;background:#FFF0E2;color:#B05E1E;font-weight:600}
+.chip.gray{background:#F4EDE4;color:var(--muted)}
+.fc-dish{margin-top:11px;font-size:12.5px;color:#7C6656;line-height:1.65}
+.fc-dish b{color:var(--ink)}
+.fc-post{
+  margin-top:12px;background:#FFF8F1;border-radius:12px;padding:10px 12px;font-size:12.5px;color:#6E5A4B;
+  border:1px solid #F6E7D5;
+}
+.fc-post .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;font-size:11px;color:var(--muted)}
+.fc-post .src{background:#EFEAE2;padding:1px 7px;border-radius:6px}
+.fc-post .txt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fc-post .lk{margin-top:7px;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)}
+.fc-post .lk:hover{color:var(--orange-d)}
+.fc-post .lk.did{color:var(--orange-d);font-weight:800}
+.empty-card{
+  break-inside:avoid;margin-bottom:16px;background:#fff;border:1.5px dashed #FFCFA6;border-radius:var(--radius);
+  padding:34px 22px;text-align:center;color:var(--muted);box-shadow:var(--shadow);
+}
+.empty-card b{display:block;font-size:16px;color:var(--orange-d);margin-bottom:6px}
+.empty-card button{margin-top:14px;padding:9px 22px;border-radius:999px;background:var(--orange);color:#fff;font-weight:700;font-size:13px}
+
+/* ============ 抽屉详情 ============ */
+.drawer-mask{position:fixed;inset:0;background:rgba(61,43,31,.45);z-index:80;opacity:0;pointer-events:none;transition:opacity .3s}
+.drawer-mask.show{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;width:430px;max-width:96vw;z-index:81;background:#FFF9F3;
+  transform:translateX(105%);transition:transform .34s cubic-bezier(.32,.72,.28,1);
+  display:flex;flex-direction:column;box-shadow:var(--shadow-lg);
+}
+.drawer.show{transform:translateX(0)}
+.dr-head{position:relative;padding:22px 22px 18px;color:#fff;flex:none}
+.dr-head .em{font-size:34px}
+.dr-head h3{font-size:21px;font-weight:900;margin-top:6px}
+.dr-head .meta{font-size:12px;opacity:.9;margin-top:3px}
+.dr-head .score-line{display:flex;align-items:center;gap:9px;margin-top:11px;flex-wrap:wrap}
+.dr-head .score-line .num{font-size:26px;font-weight:900}
+.dr-head .score-line .num.zero{font-size:12.5px;background:rgba(255,255,255,.24);padding:3px 11px;border-radius:999px}
+.dr-head .score-line .ct{font-size:11.5px;opacity:.9}
+.dr-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.26);color:#fff;font-size:15px}
+.dr-body{flex:1;overflow-y:auto;padding:16px 20px 30px;scrollbar-width:thin}
+.dr-sec{margin-bottom:16px}
+.dr-sec h4{font-size:13px;color:var(--orange-d);letter-spacing:1px;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.dish{display:flex;justify-content:space-between;gap:12px;padding:8px 12px;background:#fff;border-radius:11px;margin-bottom:6px;font-size:13px;box-shadow:0 2px 8px rgba(242,100,31,.06)}
+.dish .n{font-weight:700;flex:none}
+.dish .n em{font-style:normal;font-size:10px;background:var(--red);color:#fff;border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:1px}
+.dish .p{color:var(--muted);text-align:right;font-size:12px}
+.feed-tabs{display:flex;gap:8px;margin-bottom:12px}
+.ftab{
+  flex:1;padding:9px 10px;border-radius:11px;background:#fff;font-size:13px;font-weight:700;color:var(--muted);
+  border:1.5px solid transparent;transition:all .18s;
+}
+.ftab.on{background:var(--orange);color:#fff;box-shadow:var(--shadow)}
+.post{background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 3px 10px rgba(242,100,31,.07);animation:pop .3s}
+@keyframes pop{from{opacity:0;transform:translateY(7px)}}
+.post .ph{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.post .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--orange-l),var(--peach));display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;font-weight:800;flex:none}
+.post .who{font-weight:700;font-size:13px}
+.post .when{font-size:11px;color:var(--muted)}
+.post .src-tag{margin-left:auto;font-size:10px;background:#F0EBE3;color:var(--muted);padding:2px 7px;border-radius:6px;flex:none}
+.post .txt{font-size:13.5px;color:#544237}
+.post .tags{margin-top:7px;display:flex;gap:5px;flex-wrap:wrap}
+.post .tags span{font-size:11px;color:var(--orange-d);background:#FFF0E2;padding:1.5px 8px;border-radius:999px}
+.post .ft{margin-top:9px;display:flex;align-items:center;gap:14px}
+.like-btn{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted);padding:4px 11px;border-radius:999px;background:#F7F0E7;transition:all .15s}
+.like-btn:hover{background:#FFE8D6}
+.like-btn.did{background:var(--orange);color:#fff;font-weight:800;box-shadow:0 4px 12px rgba(242,100,31,.34)}
+.like-btn:active{transform:scale(.94)}
+.like-btn .lk-ico{font-size:13px;line-height:1;display:inline-block}
+.like-btn .lk-num{font-variant-numeric:tabular-nums}
+.like-btn.pop{animation:likePop .42s cubic-bezier(.34,1.56,.5,1)}
+@keyframes likePop{0%{transform:scale(1)}35%{transform:scale(1.26)}65%{transform:scale(.93)}100%{transform:scale(1)}}
+.like-btn[disabled]{opacity:.55;cursor:wait}
+.feed-empty{text-align:center;padding:28px 16px;background:#fff;border:1.5px dashed #FFCFA6;border-radius:14px;color:var(--muted);font-size:13px}
+.feed-empty b{color:var(--orange-d)}
+.composer{background:#fff;border-radius:14px;padding:13px 14px;box-shadow:0 3px 10px rgba(242,100,31,.08);margin-bottom:12px}
+.composer .row{display:flex;align-items:center;gap:6px;margin-bottom:9px;flex-wrap:wrap}
+.composer .lbl{font-size:11.5px;color:var(--muted);margin-right:3px}
+.star-btn{font-size:21px;color:#E8DDD0;transition:transform .12s,color .12s}
+.star-btn.on{color:var(--gold)}
+.star-btn:hover{transform:scale(1.22)}
+.qtag{font-size:12px;padding:4px 11px;border-radius:999px;background:#F7F0E7;color:#8B7463;transition:all .15s;font-weight:600}
+.qtag.on{background:var(--orange);color:#fff}
+.composer textarea{
+  width:100%;border:1.5px solid var(--line);border-radius:11px;padding:9px 11px;resize:none;font-size:13px;
+  background:#FFFBF6;min-height:58px;
+}
+.composer textarea:focus{outline:none;border-color:var(--orange-l)}
+.composer .cta{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+.rate-only{font-size:12px;color:var(--orange-d);text-decoration:underline dotted;cursor:pointer}
+.submit-btn{padding:9px 24px;border-radius:999px;background:linear-gradient(135deg,var(--orange),var(--orange-l));color:#fff;font-weight:800;font-size:13.5px;box-shadow:var(--shadow);transition:transform .15s}
+.submit-btn:hover{transform:translateY(-1px)}
+.auth-tip{margin-top:9px;font-size:11px;color:var(--muted);background:#FFF4E9;border-radius:9px;padding:6px 10px}
+
+/* ============ 添加新店弹窗 ============ */
+.modal-mask{position:fixed;inset:0;background:rgba(61,43,31,.5);z-index:90;opacity:0;pointer-events:none;transition:opacity .28s;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal-mask.show{opacity:1;pointer-events:auto}
+.modal{
+  background:#fff;border-radius:22px;width:440px;max-width:96vw;max-height:88vh;overflow-y:auto;
+  transform:translateY(24px) scale(.97);transition:transform .3s cubic-bezier(.32,.72,.28,1);padding:24px;
+  box-shadow:var(--shadow-lg);
+}
+.modal-mask.show .modal{transform:translateY(0) scale(1)}
+.modal h3{font-size:18px;font-weight:900;margin-bottom:4px}
+.modal .sub{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:12.5px;font-weight:700;margin-bottom:5px;color:#7C6656}
+.fld label em{font-style:normal;color:var(--red)}
+.fld input,.fld select,.fld textarea{
+  width:100%;border:1.5px solid var(--line);border-radius:11px;padding:9px 12px;background:#FFFBF6;
+}
+.fld textarea{resize:none;min-height:60px}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--orange-l)}
+.modal .acts{display:flex;gap:10px;margin-top:6px}
+.ghost-btn{flex:1;padding:11px;border-radius:12px;background:#F5EFE7;color:var(--muted);font-weight:700;font-size:14px}
+.modal .submit-btn{flex:1.4;font-size:14px}
+.form-err{font-size:12px;color:var(--red);margin-top:-4px;margin-bottom:10px;display:none}
+.form-err.show{display:block}
+
+/* ============ 结果弹窗 ============ */
+.result-modal .res-em{font-size:44px;text-align:center;margin-top:4px}
+.result-modal h3{text-align:center;font-size:22px}
+.result-modal .r-sub{text-align:center;font-size:12px;color:var(--muted)}
+.res-score{display:flex;align-items:center;justify-content:center;gap:9px;margin:13px 0 4px}
+.res-score .num{font-size:28px;font-weight:900;color:var(--gold)}
+.res-score .num.zero{font-size:12.5px;color:var(--muted);background:#F5EFE7;padding:4px 12px;border-radius:999px}
+.res-latest{background:#FFF8F1;border:1px solid #F6E7D5;border-radius:13px;padding:11px 13px;font-size:13px;color:#6E5A4B;margin:12px 0}
+.res-latest .h{font-size:11px;color:var(--muted);margin-bottom:4px}
+.result-modal .acts{display:flex;gap:9px}
+.result-modal .acts .submit-btn{flex:1;font-size:14px;padding:11px}
+.result-modal .acts .ghost-btn{padding:11px}
+
+/* ============ FAB ============ */
+.fab{
+  position:fixed;right:22px;bottom:24px;z-index:65;padding:14px 22px;border-radius:999px;
+  background:linear-gradient(135deg,var(--orange),var(--orange-l));color:#fff;font-weight:900;font-size:15px;
+  box-shadow:0 12px 28px rgba(242,100,31,.42);transition:transform .18s,box-shadow .18s;letter-spacing:.5px;
+}
+.fab:hover{transform:translateY(-3px) scale(1.03)}
+.fab:active{transform:scale(.96)}
+
+/* ============ 同步 toast ============ */
+.toast{
+  position:fixed;left:50%;bottom:30px;transform:translate(-50%,80px);z-index:99;
+  background:var(--ink);color:#fff;padding:11px 22px;border-radius:999px;font-size:13.5px;font-weight:600;
+  box-shadow:var(--shadow-lg);transition:transform .3s,opacity .3s;opacity:0;display:flex;align-items:center;gap:8px;max-width:88vw;
+}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.toast.ok{background:var(--green)}
+.toast .spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite;flex:none}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ============ 页脚 ============ */
+footer{max-width:1080px;margin:0 auto;padding:26px 20px 40px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+footer b{color:var(--orange-d)}
+
+/* ============ 响应式 ============ */
+@media (max-width:900px){ .flow{columns:2} }
+@media (max-width:640px){
+  .flow{columns:1}
+  .logo{font-size:16px}
+  .cloud-dot span{display:none}
+  .drawer{top:auto;width:100%;height:88vh;border-radius:24px 24px 0 0;transform:translateY(105%)}
+  .drawer.show{transform:translateY(0)}
+  .fab{right:16px;bottom:18px;padding:12px 18px;font-size:14px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="nav-toggle" id="navToggle">📍 <span id="navCur">校内食堂</span> <span class="caret">▼</span></button>
+  <div class="logo">SUAT<b>er</b>Food 🍜</div>
+  <div class="cloud-dot" id="cloudDot" title="云端同步状态"><i></i><span id="cloudTxt">本地模式</span></div>
+</header>
+
+<div class="nav-mask" id="navMask"></div>
+<nav class="nav-panel" id="navPanel">
+  <h3>📍 全部板块 · 11</h3>
+  <div id="navList"></div>
+  <button class="nav-add" id="navAddBtn">➕ 添加新店</button>
+  <div class="nav-tip">💡 校内食堂是跨板块聚合的七大书院餐厅；自定义区聚合你添加的所有店铺，它们也会按所属区域出现在对应板块的卡片流和转盘里。</div>
+</nav>
+
+<main>
+  <section class="hero">
+    <h1>今天<span>吃什么</span>？让命运决定 🎯</h1>
+    <p class="sub">深圳理工大学干饭社区 · 覆盖 11 大板块 · 学长学姐亲测指南</p>
+    <div class="stats">
+      <div class="stat"><b id="statShops">0</b><span>家店铺</span></div>
+      <div class="stat"><b id="statPosts">0</b><span>条指南帖</span></div>
+      <div class="stat"><b id="statAvg">—</b><span>已点亮的平均分</span></div>
+    </div>
+  </section>
+
+  <section class="wheel-zone">
+    <div class="wheel-wrap" id="wheelWrap">
+      <div class="pointer"></div>
+      <svg id="wheelSvg" viewBox="0 0 340 340"></svg>
+    </div>
+    <div class="wheel-guard" id="wheelGuard" style="display:none">
+      <div style="font-size:34px">🎯</div>
+      <b id="guardTitle">这个板块还没法转</b>
+      <p id="guardText">再添加一家店，转盘才能转起来哦！</p>
+    </div>
+    <button class="spin-btn" id="spinBtn">🎲 吃什么</button>
+    <p class="mood-note" id="wheelNote">转盘扇区随当前板块动态生成 · 抽到哪算哪</p>
+  </section>
+
+  <div class="area-head">
+    <h2 id="areaTitle">📍 校内食堂</h2>
+    <span class="badge" id="areaCount">0 家</span>
+    <span class="desc" id="areaDesc"></span>
+  </div>
+
+  <div class="content" id="content">
+    <div class="flow" id="cardFlow"></div>
+  </div>
+</main>
+
+<footer>
+  <p><b>SUATerFood</b> · 内容整理自《2026 新生指南》《SUAT 新生攻略（24 级）》，历史指南帖仅供避雷参考，<b>不计入评分</b>；所有店铺初始 0.0 分，等你的星星点亮。</p>
+  <p style="margin-top:5px">☁ 数据存储在 <b>Supabase</b>（<code>shops_ratings</code> / <code>posts</code> / <code>post_likes</code> 三张表），评分、发帖、点赞实时同步，别人发帖你这边会自动刷新；未填写密钥时自动降级为本地演示模式，功能照常可用。</p>
+</footer>
+
+<button class="fab" id="fabBtn">➕ 添加新店</button>
+
+<!-- 详情抽屉 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+  <div class="dr-head" id="drHead"></div>
+  <div class="dr-body" id="drBody"></div>
+</aside>
+
+<!-- 添加新店 -->
+<div class="modal-mask" id="addMask">
+  <div class="modal">
+    <h3>➕ 添加一家新店</h3>
+    <p class="sub">提交后默认 0.0 分，立刻加入对应板块的转盘抽奖池（自定义店铺保存在本机浏览器）</p>
+    <div class="form-err" id="addErr">请至少填写店名</div>
+    <div class="fld"><label>店铺名称 <em>*</em></label><input id="fName" maxlength="20" placeholder="如：柳大胖螺蛳粉"></div>
+    <div class="fld"><label>所属区域</label><select id="fArea"></select></div>
+    <div class="fld"><label>招牌菜 / 人均</label><input id="fDish" maxlength="30" placeholder="如：炸蛋螺蛳粉 · 13r"></div>
+    <div class="fld"><label>推荐理由</label><textarea id="fWhy" maxlength="80" placeholder="一句话安利，或者先立个求测评的 flag 🚩"></textarea></div>
+    <div class="acts">
+      <button class="ghost-btn" data-close="addMask">取消</button>
+      <button class="submit-btn" id="addSubmit">➕ 提交并加入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 转盘结果 -->
+<div class="modal-mask" id="resMask">
+  <div class="modal result-modal">
+    <div class="res-em" id="resEm">🍜</div>
+    <h3 id="resName">店名</h3>
+    <p class="r-sub" id="resArea">板块</p>
+    <div class="res-score">
+      <span class="num" id="resScore">0.0</span>
+      <span id="resStars"></span>
+      <span style="font-size:11.5px;color:var(--muted)" id="resCount"></span>
+    </div>
+    <div class="res-latest"><div class="h">💬 最新一条声音</div><div id="resPost">—</div></div>
+    <div class="acts">
+      <button class="ghost-btn" id="resAgain">🔁 再转一次</button>
+      <button class="ghost-btn" id="resDetail">👀 看看口碑</button>
+      <button class="submit-btn" id="resOk">✅ 就吃这家</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="spin" id="toastSpin" style="display:none"></span><span id="toastTxt"></span></div>
+
+<script>
+/* ============================================================
+   SUATerFood v4 — 十一大板块（含校内食堂聚合）· 零基线社区 · 云端同步模拟
+   内容整理自《2026 新生指南》《SUAT 新生攻略（24 级）》
+   评分基线：所有店铺 score 0 / count 0，指南帖不计分
+   ============================================================ */
+'use strict';
+const $ = s => document.querySelector(s);
+
+/* ---------- 板块定义（11） ---------- */
+const AREAS = [
+  {id:'campus',      em:'🏫', name:'校内食堂',      sub:'七大书院餐厅 · 风雨连廊步行直达'},
+  {id:'tianquan',   em:'🛰️', name:'天权区',       sub:'天权 3/4/5 号楼 · 步行 3 分钟'},
+  {id:'yuheng',     em:'🌙', name:'玉衡区',       sub:'玉衡 5/6/7 号楼 · 风雨连廊直达'},
+  {id:'xiaochijie', em:'🍢', name:'小吃街',       sub:'核心营业 18:00–22:00 · 深夜食堂'},
+  {id:'zhenmei',    em:'🏘️', name:'圳美·新陂头',  sub:'骑行 10 分钟 · 烟火气核心区'},
+  {id:'qiangxia',   em:'🍯', name:'羌下松园居',   sub:'出门右转就到 · 松园居街区'},
+  {id:'lanting',    em:'🍔', name:'中大澜庭',     sub:'小吃街过去一点 · 连锁集散地'},
+  {id:'kexuecheng', em:'🔬', name:'光明科学城',   sub:'免费班车直达 · 打工人续命区'},
+  {id:'loucun',     em:'🍽️', name:'楼村',         sub:'打车 15 元 · 好吃到值得探索'},
+  {id:'qita',       em:'🛵', name:'其他与外卖',   sub:'外卖神店与周边工业园'},
+  {id:'custom',     em:'🌟', name:'自定义',       sub:'你亲手添加的专属店铺'},
+];
+const areaOf = id => AREAS.find(a=>a.id===id);
+
+/* ---------- 发帖快捷标签 ---------- */
+const QUICK_TAGS = {
+  campus:['#真香','#避雷','#阿姨手抖','#穷鬼套餐','#夜宵救星','#适合约会'],
+  tianquan:['#真香','#避雷','#阿姨手抖','#穷鬼套餐','#夜宵救星','#排队久'],
+  yuheng:['#真香','#避雷','#求探店','#夜宵救星'],
+  xiaochijie:['#夜宵','#真香','#避雷','#性价比之王','#排队久','#拼单'],
+  zhenmei:['#真香','#性价比之王','#citywalk','#避雷'],
+  qiangxia:['#拼单','#真香','#避雷','#聚餐'],
+  lanting:['#拼单','#真香','#约会圣地','#排队久'],
+  kexuecheng:['#续命水','#穷鬼套餐','#真香'],
+  loucun:['#宝藏小店','#真香','#聚餐','#性价比之王'],
+  qita:['#外卖神店','#被偷预警','#送得慢','#真香'],
+  custom:['#真香','#避雷','#私藏','#求测评','#夜宵']
+};
+const DOC_RECS = { /* 各板块指南口碑兜底（心情差滤镜用） */
+  campus:['shuguang','yuangeng','bafenbao'],
+  tianquan:['shuguang','xianxing','yuangeng'],
+  yuheng:['fendouzhe','shenzhou'],
+  xiaochijie:['roujiamo','abofan','laoyoufen'],
+  zhenmei:['xianmianzhuang','zhujiaofan','tangshui'],
+  qiangxia:['minghuobz','lanzhou'],
+  lanting:['mcd','jinGege'],
+  kexuecheng:['cudi'],
+  loucun:['yicunyizhai'],
+  qita:['meizhou']
+};
+
+/* ---------- 预置店铺数据 ---------- */
+const SRC_A = '2026 新生指南';
+const SRC_B = 'SUAT 新生攻略（24 级）';
+const gp = (u,t,l,g,s) => ({u,t,l,g:g||[],s});
+
+const SHOPS = [
+/* ===== 0. 校内食堂（聚合板块：跨区收录七大餐厅） ===== */
+{id:'bafenbao', area:'campus', name:'八分饱', short:'八分饱', em:'🍱', color:'#FF7A3D', price:12,
+ dishes:[{n:'四季优选',p:'7 元起 · 湘/粤菜 4–10 元一碟',h:1},{n:'自选称重',p:'2.78 元/50g（工作日中午）'},{n:'健康轻食',p:'2.18 元/50g · 可自制汉堡三明治'},{n:'烧腊 · 鸡腿饭',p:'15–20 元 · 推荐'},{n:'麻辣烫',p:'2.58 元/50g · 三种口味'},{n:'南粉北面',p:'10–18 元 · 大份免费加面'},{n:'早餐',p:'皮蛋瘦肉粥 · 豆浆自行加糖（可无糖）'}],
+ posts:[
+  gp('不想再当大冤种','点了个绿豆虾仁 15r，翻遍整盘没找到虾仁，结账感慨一句好贵，被红衣大爷一句「没钱别吃啊」直接暴击 💀 还吃到过发酸的青豆，免费汤像刷锅水。',203,['#避雷','#价格刺客'],SRC_B),
+  gp('赶due的夜行动物','19:30 才收摊，拯救了这个时候才到食堂的同学。7 元茄子 + 白菜也能活，夜宵救星实至名归。',126,['#夜宵救星','#穷鬼套餐'],SRC_A),
+  gp('管不住手星人','自选称重真的香，但一定要管住手！不知不觉打多了，结账被价格攻击了 😭（饭 1 元另算）',88,['#性价比之王'],SRC_A),
+  gp('无糖豆浆唯粉','早餐比先行丰富，偶尔有皮蛋瘦肉粥和蛋糕，豆浆自己加糖——想喝无糖的请移步八分饱 ✅',74,['#真香'],SRC_A),
+  gp('鸡腿饭推广大使','烧腊的鸡腿饭推荐！15–20 元，部位随机，适合运气好或者不挑的同学。',61,['#真香'],SRC_A),
+  gp('谨慎夹菜协会','青菜偶尔有怪味，某些荤菜比较腥（应该是做法问题），遇到全是肉的菜需谨慎。',56,['#避雷'],SRC_A)
+ ]},
+
+/* ===== 1. 天权区 ===== */
+{id:'shuguang', area:'tianquan', name:'曙光食堂', short:'曙光', em:'🍳', color:'#F98B6B', price:15,
+ dishes:[{n:'滑蛋咖喱 / 卤肉饭',p:'特别好吃 · 经常上新',h:1},{n:'鸡排 / 蛋包饭',p:'好吃，推荐'},{n:'烤盘饭',p:'3.28元/两 · 10 元起 · 推荐牛肉'},{n:'韩式石锅拌饭',p:'16–22 元 · 偏贵'},{n:'7 寸披萨',p:'19.9–25 元'},{n:'西冷牛排',p:'29 元 · 谨慎',x:1},{n:'潮味汤粉王',p:'10–20 元 · 不推荐',x:1}],
+ posts:[
+  gp('曙光在逃蛋包饭','茶餐厅滑蛋（配咖喱）、卤肉饭特别好吃，也经常上新菜式；鸡排好吃，蛋包饭好吃，推荐 👍',158,['#真香'],SRC_A),
+  gp('29元教训','西冷牛排不好吃，29 元，谨慎。几乎都是预制品，叫号等待时间有时过长，品质不稳定。',97,['#避雷'],SRC_A),
+  gp('连吃三天的后悔人','烤盘饭有免费汤（酸梅汤已成历史尘埃😇），但味道太单一，吃多了真的有点腻，对食材新鲜有要求的慎选。',83,['#避雷'],SRC_A),
+  gp('丸子切三份受害者','潮味汤粉王不推荐，没听到过好评。量少价高，配菜很少，一个丸子要切三份呢，大份也吃不饱。',141,['#避雷','#价格刺客'],SRC_A),
+  gp('最后净土守护者','石锅拌饭 16–22 元偏贵，但烫、适合喜欢吃饭的人，个人认为是曙光食堂于我而言的最后净土。',64,['#真香'],SRC_A)
+ ]},
+{id:'xianxing', area:'tianquan', name:'先行食堂', short:'先行', em:'🍲', color:'#FFB84D', price:14,
+ dishes:[{n:'东北菜 + 小湘厨',p:'一荤一素 14 元 · 一荤两素 17 元',h:1},{n:'加菜',p:'加荤 4 元 · 加素 3 元'},{n:'老婆饼（早餐）',p:'很好吃 · 偶尔有瑞士卷',h:1},{n:'烤鱼套餐',p:'78–98 元 · 3–4 人聚餐'},{n:'自选早餐',p:'豆浆统一加糖'}],
+ posts:[
+  gp('先行早八人','早餐种类还行，老婆饼很好吃，偶尔有瑞士卷（奶油比较少），早八续命全靠它。',67,['#真香'],SRC_A),
+  gp('鸡肉卷受害者','鸡肉卷味道不太正宗，不建议，这个真的踩了。',43,['#避雷'],SRC_A),
+  gp('凑单专业户','烤鱼套餐 3–4 人 78–98 元，宿舍聚餐凑单还行，别一个人去。',29,['#拼单'],SRC_A),
+  gp('四号楼常驻','整体「一般」，胜在便宜和离得近，属于不知道吃啥时的保底选项。',38,['#穷鬼套餐'],SRC_A)
+ ]},
+{id:'yuangeng', area:'tianquan', name:'袁庚食堂', short:'袁庚', em:'🥢', color:'#FFA951', price:13,
+ dishes:[{n:'土豆牛肉盖浇饭',p:'强推 · 好吃到爆，建议配饮料',h:1},{n:'唐厨壹号小炒',p:'家常菜 9–16 元 · 重在便宜'},{n:'西北牛肉拉面 / 饺子',p:'最低消费 12 元 · 推荐饺子',h:1},{n:'大盘鸡 / 牛杂煲',p:'2–4 人聚餐 · 价格偏高'},{n:'烧腊',p:'口味不稳定 · 烧鸭谨慎',x:1}],
+ posts:[
+  gp('jdl的野生传人','强推土豆牛肉盖浇饭，好吃到爆，建议配饮料食用 —— 指南原话，我实测同意 🍹',187,['#真香'],SRC_A),
+  gp('北方胃在深圳','西北手工面好吃，推荐饺子/云吞；北方的老师和同学说袁庚的拉面更合口味，人气挺旺。',92,['#真香'],SRC_A),
+  gp('端盘子练平衡','东北菜家常菜重在便宜，但是阿姨打菜手法特别容易汤泡饭 / 串味，端回座位像在走钢丝。',76,['#阿姨手抖'],SRC_B),
+  gp('烧鸭皮爱好者','烧腊好吃但口味不稳定（看大爷给你切哪块肉），袁庚的烧鸭避雷一下……不过也有人爱吃，看口味～',68,['#避雷'],SRC_B)
+ ]},
+
+/* ===== 2. 玉衡区 ===== */
+{id:'fendouzhe', area:'yuheng', name:'奋斗者食堂', short:'奋斗者', em:'🚀', color:'#FFC46B', price:12,
+ dishes:[{n:'烤肉',p:'人气窗口 · 饭点排队',h:1},{n:'包你粥到',p:'粥品 · 早餐友好'}],
+ posts:[
+  gp('玉衡五号楼住户','宿舍在楼上、下楼就能吃，这个动线我给满分。烤肉窗口饭点人很多，早点去。',36,['#真香'],SRC_B),
+  gp('粥到人到','包你粥到是真的包到，赶早八前来一碗热粥，整个人都熨帖了。',21,['#穷鬼套餐'],SRC_B)
+ ]},
+{id:'shenzhou', area:'yuheng', name:'神舟食堂', short:'神舟', em:'🛰️', color:'#FF9F5A', price:12,
+ dishes:[{n:'小碗菜',p:'按碗计价 · 丰俭由人',h:1},{n:'自助餐',p:'称重 / 自选'},{n:'粉面馆',p:'现煮粉面'}],
+ posts:[
+  gp('小碗菜研究员','小碗菜按碗计价，想吃几样点几样，对选择困难症和钱包都很友好。',28,['#性价比之王'],SRC_B),
+  gp('粉面脑袋','粉面馆现煮，等一会儿但值得，晚上九点去还有热汤面。',17,['#夜宵救星'],SRC_B)
+ ]},
+{id:'gaozhongbu', area:'yuheng', name:'高中部食堂', short:'高中部', em:'🏫', color:'#FF8A80', price:0,
+ dishes:[{n:'自助餐',p:'待开放 · 以开学公告为准'},{n:'汉堡',p:'待开放',x:0}],
+ posts:[
+  gp('指南复读机','高中部食堂部分窗口还在筹备，自助餐和汉堡先蹲一个，等开放了来交作业。',13,['#求探店'],SRC_B)
+ ]},
+
+/* ===== 3. 小吃街 ===== */
+{id:'abofan', area:'xiaochijie', name:'阿波炒粉', short:'阿波炒粉', em:'🍜', color:'#FF8A5C', price:8,
+ dishes:[{n:'炒粉',p:'8r 基础份 · 大份更顶',h:1},{n:'加配菜',p:'2–3r/份 · 自选'}],
+ posts:[gp('小吃街常驻人口','8r/基础份，可加 2–3r/份的配菜，味道不错，老板人好，一般是小吃街最晚下班的店。',88,['#夜宵','#真香'],SRC_A)]},
+{id:'laoroujia', area:'xiaochijie', name:'腊肉家', short:'腊肉家', em:'🥘', color:'#FFB84D', price:12,
+ dishes:[{n:'辣椒炒肉',p:'下饭神器',h:1},{n:'农家一碗香',p:'招牌小炒'}],
+ posts:[gp('湖南胃认证','腊肉家的辣椒炒肉和农家一碗香都拿得出手，就着能干两碗饭。',34,['#真香'],SRC_B)]},
+{id:'laorouchaofan', area:'xiaochijie', name:'腊肉炒饭', short:'腊肉炒饭', em:'🍚', color:'#FFC46B', price:10,
+ dishes:[{n:'腊肉炒饭',p:'不同价位套餐自选',h:1}],
+ posts:[gp('炒饭套餐对比员','有不同价位的套餐，丰俭由人，饿的时候来一份大的很满足。',19,['#性价比之王'],SRC_B)]},
+{id:'shouzhuabing', area:'xiaochijie', name:'手抓饼·烤冷面', short:'手抓饼', em:'🫓', color:'#FF9F5A', price:8,
+ dishes:[{n:'手抓饼 / 烤冷面',p:'两家摊位 · 分咸口 / 酸甜口',h:1}],
+ posts:[gp('口味党争调停员','手抓饼和烤冷面是两家，一家咸口一家酸甜口，别排错队——都好吃。',26,['#真香'],SRC_B)]},
+{id:'shaguomixian', area:'xiaochijie', name:'砂锅米线·粥', short:'砂锅米线', em:'🍲', color:'#FFA951', price:12,
+ dishes:[{n:'砂锅米线 / 砂锅粥',p:'热乎管饱 · 中规中矩'}],
+ posts:[gp('热乎派','中规中矩但不踩雷，天冷的时候一锅端上来冒着热气，幸福具象化。',15,['#真香'],SRC_B)]},
+{id:'changfen', area:'xiaochijie', name:'肠粉', short:'肠粉', em:'🥟', color:'#F98B6B', price:8,
+ dishes:[{n:'哪吒招牌肠粉',p:'最好吃的一家',h:1},{n:'雨田肠粉',p:'送豆浆'}],
+ posts:[gp('肠粉考古学家','招牌上画着哪吒的那家最好吃；雨田肠粉会送豆浆，性价比党可选。',41,['#真香','#性价比之王'],SRC_B)]},
+{id:'furoupiangu', area:'xiaochijie', name:'福鼎肉片·云吞', short:'福鼎肉片', em:'🥣', color:'#FFD07A', price:10,
+ dishes:[{n:'福鼎肉片 / 云吞',p:'料很足',h:1}],
+ posts:[gp('料足党代表','福鼎肉片和云吞料都很足，吃完是真的饱，不是那种汤水刺客。',23,['#真香'],SRC_B)]},
+{id:'gaokaoguan', area:'xiaochijie', name:'高烤官', short:'高烤官', em:'🍢', color:'#FF7A3D', price:25,
+ dishes:[{n:'烧烤',p:'生意最好 · 人均 25r',h:1},{n:'东北大油边',p:'5r/串 · 等待约 15min'}],
+ posts:[gp('记得自己点了什么','生意最好的烧烤，价格不算太贵。一定要记得自己点了什么，这家店经常搞不清楚你点的是啥。',65,['#拼单','#避雷'],SRC_A)]},
+{id:'luosifen', area:'xiaochijie', name:'柳州螺蛳粉', short:'螺蛳粉', em:'🍲', color:'#FFB84D', price:13,
+ dishes:[{n:'螺蛳粉',p:'约 13r · 炸蛋必加',h:1}],
+ posts:[gp('炸蛋唯粉','好吃，尤其是带炸蛋的。泡进汤里吸饱汤汁，一口下去全是快乐。',55,['#真香'],SRC_A)]},
+{id:'laoyoufen', area:'xiaochijie', name:'南宁老友粉', short:'老友粉', em:'🍜', color:'#FF8A5C', price:12,
+ dishes:[{n:'南宁老友粉',p:'酸辣开胃 · 不踩雷',h:1}],
+ posts:[gp('嗦粉星人','南宁老友粉不踩雷，酸辣口开胃，下午没胃口的时候来一碗就活了。',31,['#真香'],SRC_B)]},
+{id:'roujiamo', area:'xiaochijie', name:'潼关肉夹馍', short:'肉夹馍', em:'🥙', color:'#FF7A66', price:8,
+ dishes:[{n:'潼关肉夹馍',p:'8r/份 · 卤肉香足',h:1}],
+ posts:[gp('性价比研究员','8r/份，卤肉香味很足，肉的分量超多，面皮很脆，性价比超高。',120,['#性价比之王','#真香'],SRC_A)]},
+{id:'xiyangfan', area:'xiaochijie', name:'夕阳炒粉', short:'夕阳炒粉', em:'🍜', color:'#FFC07A', price:8,
+ dishes:[{n:'炒粉',p:'待评测 🆕'}],
+ posts:[gp('好奇但没吃过','夕阳炒粉：没吃过。谁能去吃一口回来交个作业？',9,['#求测评'],SRC_B)]},
+{id:'dayoubian', area:'xiaochijie', name:'东北大油边', short:'大油边', em:'🍖', color:'#FF8A3D', price:5,
+ dishes:[{n:'东北大油边',p:'5r/串 · 排骨带油',h:1}],
+ posts:[gp('油边爱好者','东北大油边 5r 一串，排骨带着油边，烤出来滋滋冒油，香迷糊了。',27,['#真香'],SRC_B)]},
+{id:'kaoshenghao', area:'xiaochijie', name:'烤生蚝', short:'烤生蚝', em:'🦪', color:'#FF9F5A', price:20,
+ dishes:[{n:'蒜蓉烤生蚝',p:'中蚝 / 大蚝 · 蒜蓉秘制',h:1}],
+ posts:[gp('蚝门信徒','烤生蚝分中蚝大蚝，蒜蓉是秘制的，一打起点，和兄弟拼一单刚刚好。',33,['#拼单','#真香'],SRC_B)]},
+{id:'guangtouya', area:'xiaochijie', name:'光头鸭·杨小卤', short:'光头鸭', em:'🦆', color:'#FFB84D', price:15,
+ dishes:[{n:'卤鸭 / 卤味拼盘',p:'经典卤味 · 下酒下饭',h:1}],
+ posts:[gp('卤味接头人','光头鸭和杨小卤都是经典卤味，鸭脖鸭翅各来一份，回宿舍追剧绝配。',22,['#夜宵'],SRC_B)]},
+{id:'jisugu', area:'xiaochijie', name:'鸡锁骨·炸蘑菇', short:'鸡锁骨', em:'🍗', color:'#FFC46B', price:10,
+ dishes:[{n:'炸鸡锁骨 / 炸蘑菇',p:'现炸 · 酥脆'}],
+ posts:[gp('炸物双拼','鸡锁骨配炸蘑菇，一荤一素双拼，现炸的才好吃，多等两分钟值得。',18,['#真香'],SRC_B)]},
+{id:'kaomianjin', area:'xiaochijie', name:'烤面筋·烤苕皮', short:'烤面筋', em:'🌶️', color:'#F98B6B', price:5,
+ dishes:[{n:'烤面筋 / 烤苕皮',p:'刷酱 · 辣度可选'}],
+ posts:[gp('面筋刷酱党','烤面筋和烤苕皮，酱刷得足，5 块钱买到碳水和快乐。',14,['#性价比之王'],SRC_B)]},
+{id:'tiebandoufu', area:'xiaochijie', name:'铁板豆腐·狼牙土豆', short:'铁板豆腐', em:'🥔', color:'#FFA951', price:8,
+ dishes:[{n:'铁板豆腐 / 狼牙土豆',p:'大车男老板 / 小车女老板',h:1}],
+ posts:[gp('小车党','铁板豆腐和狼牙土豆有两摊：大车是男老板、小车是女老板，个人站小车，给料更舍得。',37,['#真香'],SRC_B)]},
+{id:'chouDoufu', area:'xiaochijie', name:'长沙臭豆腐', short:'臭豆腐', em:'🧆', color:'#8B6B4A', price:10,
+ dishes:[{n:'长沙臭豆腐',p:'味浓 · 24:00 才下班',h:1}],
+ posts:[gp('闻着臭吃着香','长沙臭豆腐味很浓，隔着三个摊位都能闻到，但吃到嘴里就是真香。而且 24:00 才下班，夜猫子专属。',44,['#夜宵','#真香'],SRC_B)]},
+{id:'wugu', area:'xiaochijie', name:'五谷杂粮养生坊', short:'养生坊', em:'🫖', color:'#D9A05B', price:8,
+ dishes:[{n:'红糖姜枣茶',p:'养生暖饮',h:1}],
+ posts:[gp('朋克养生代表','炸串配红糖姜枣茶，这就是大学生的朋克养生。姨妈期和淋雨后来一杯很顶。',16,['#真香'],SRC_B)]},
+{id:'hongtangcha', area:'xiaochijie', name:'老红糖奶茶·绿豆沙', short:'红糖奶茶', em:'🧋', color:'#C98A5E', price:5,
+ dishes:[{n:'珍珠奶茶 / 绿豆沙',p:'中杯 5r · 极致解渴',h:1}],
+ posts:[gp('5块钱快乐','老红糖珍珠奶茶和绿豆沙，中杯 5r，夏天来一杯绿豆沙是极致解渴。',52,['#穷鬼套餐','#性价比之王'],SRC_B)]},
+{id:'ningmengcha', area:'xiaochijie', name:'柠檬茶', short:'柠檬茶', em:'🍋', color:'#FFE07A', price:9,
+ dishes:[{n:'手打柠檬茶',p:'靠近门口女老板那家最好喝',h:1}],
+ posts:[gp('柠檬茶鉴评家','几家柠檬茶里，靠近门口女老板那家最好喝，柠檬锤得透，茶味不寡。',29,['#真香'],SRC_B)]},
+{id:'tanhuo', area:'xiaochijie', name:'炭火烧烤', short:'炭火烧烤', em:'🔥', color:'#FF7A3D', price:30,
+ dishes:[{n:'炭火烧烤',p:'附近商铺 · 夜聊据点'}],
+ posts:[gp('夜聊常客','小吃街附近的炭火烧烤，串慢慢烤，人慢慢聊，适合不赶时间的晚上。',20,['#拼单','#夜宵'],SRC_B)]},
+{id:'shaxian', area:'xiaochijie', name:'沙县小吃', short:'沙县', em:'🥟', color:'#FFB84D', price:12,
+ dishes:[{n:'蒸饺 / 拌面 / 炖罐',p:'附近商铺 · 国民食堂'}],
+ posts:[gp('沙县一生推','附近的沙县小吃，蒸饺拌面加炖罐，不知道吃什么时的最终答案。',18,['#穷鬼套餐'],SRC_B)]},
+{id:'chabaidao', area:'xiaochijie', name:'茶百道', short:'茶百道', em:'🧋', color:'#FFC07A', price:16,
+ dishes:[{n:'春见 / 葡萄冻冻',p:'人均 16r · 给料很足',h:1}],
+ posts:[
+  gp('五级会员本人','给料很足，今年春见上新爱惨了，已经是五级会员。爱喝葡萄冻冻的真的好喝。',78,['#真香'],SRC_A),
+  gp('等出杯等到天黑','服务态度不太好，做的慢的要死。想喝请提前点，别在饭点排队。',45,['#排队久','#避雷'],SRC_B)
+ ]},
+{id:'xinjiangkao', area:'xiaochijie', name:'新疆烧烤', short:'新疆烧烤', em:'🍖', color:'#E8823D', price:25,
+ dishes:[{n:'红柳枝烤肉',p:'附近商铺 · 大串过瘾',h:1}],
+ posts:[gp('大串星人','附近的新疆烧烤，红柳枝大串，一串顶别家两串，肉食动物集合地。',25,['#真香','#拼单'],SRC_B)]},
+{id:'dengxia', area:'xiaochijie', name:'灯下酒馆', short:'灯下酒馆', em:'🍺', color:'#C9925E', price:40,
+ dishes:[{n:'清吧 · 小酌',p:'附近商铺 · 微醺好去处'}],
+ posts:[gp('微醺选手','灯下酒馆是清吧，环境安静，不想去吵的酒吧就来这，适合三五好友慢慢喝。',12,['#聚餐'],SRC_B)]},
+
+/* ===== 4. 圳美 · 新陂头 ===== */
+{id:'tangshui', area:'zhenmei', name:'囍记糖水铺', short:'囍记糖水', em:'🍧', color:'#FFD07A', price:10, dist:'骑行 10 分钟',
+ dishes:[{n:'糖水',p:'人均 10r · 不是很甜',h:1}],
+ posts:[gp('控糖人士','囍记糖水铺，实惠量大，不是很甜——对我这种不爱齁甜的人刚刚好。',38,['#性价比之王'],SRC_A)]},
+{id:'xianmianzhuang', area:'zhenmei', name:'西安面庄', short:'西安面庄', em:'🍝', color:'#FF9F5A', price:15, dist:'骑行 10 分钟',
+ dishes:[{n:'biangbiang 面',p:'强推 · 宽面带劲',h:1}],
+ posts:[gp('面食原教旨主义','西安面庄强推 biangbiang 面，面条宽得像裤腰带，油泼辣子一浇，嗦到停不下来。',59,['#真香'],SRC_B)]},
+{id:'kejiadoufu', area:'zhenmei', name:'客家豆腐', short:'客家豆腐', em:'🥛', color:'#FFF0C9', price:8, dist:'骑行 10 分钟',
+ dishes:[{n:'客家豆腐 / 无糖豆浆',p:'纯正客家人开的',h:1}],
+ posts:[gp('无糖党找到家','客家豆腐店是纯正客家人开的，豆浆无糖，豆腐嫩，吃完不口渴。',21,['#真香'],SRC_B)]},
+{id:'xisande', area:'zhenmei', name:'喜三德甜品', short:'喜三德', em:'🍮', color:'#FFC8A0', price:12, dist:'骑行 10 分钟',
+ dishes:[{n:'广式甜品',p:'双皮奶 / 杨枝甘露'}],
+ posts:[gp('甜品雷达','圳美的喜三德甜品，饭后甜点好去处，双皮奶奶味很足。',14,['#真香'],SRC_B)]},
+{id:'xileduo', area:'zhenmei', name:'喜乐多百货', short:'喜乐多', em:'🛍️', color:'#FFB8B8', price:10, dist:'骑行 10 分钟',
+ dishes:[{n:'9.9r 酥饼 / 披萨',p:'9.9r 一斤 · 9.9r 两大片披萨',h:1},{n:'平价百货',p:'蔬菜生鲜熟食都有'}],
+ posts:[gp('9.9战神','喜乐多百货 9.9r 一斤的各种酥饼曲奇、9.9r 两大片披萨，衣服也平价，去圳美 city 的时候可以逛一下。',66,['#穷鬼套餐','#性价比之王'],SRC_A)]},
+{id:'sunbeibei', area:'zhenmei', name:'孙北北面包', short:'孙北北', em:'🍞', color:'#F2C894', price:12, dist:'骑行 10 分钟',
+ dishes:[{n:'现烤面包',p:'早餐 / 下午茶'}],
+ posts:[gp('面包脑袋','孙北北面包，早上骑车经过来一个刚出炉的，一路都是香的。',11,['#真香'],SRC_B)]},
+{id:'zhujiaofan', area:'zhenmei', name:'隆江猪脚饭', short:'猪脚饭', em:'🍛', color:'#F98B6B', price:15, dist:'骑行 10 分钟',
+ dishes:[{n:'隆江猪脚饭',p:'人均 15r',h:1}],
+ posts:[gp('圳美 city walk 选手','圳美是光明区新湖街道的核心生活区，物价友好、烟火气浓。隆江猪脚饭好吃。',42,['#真香'],SRC_A)]},
+{id:'zhengxin', area:'zhenmei', name:'正新鸡扒', short:'正新鸡扒', em:'🍗', color:'#FFA040', price:12, dist:'骑行 10 分钟',
+ dishes:[{n:'炸鸡扒',p:'人均 12r · 出餐快',h:1}],
+ posts:[gp('鸡扒快充','正新鸡扒出餐快，赶时间抓一块边走边吃，快乐就是这么简单。',10,['#性价比之王'],SRC_B)]},
+{id:'shuiniu', area:'zhenmei', name:'水牛汉堡', short:'水牛汉堡', em:'🍔', color:'#FF8A5C', price:15, dist:'骑行 10 分钟',
+ dishes:[{n:'水牛汉堡',p:'肉饼香香的',h:1}],
+ posts:[gp('肉饼香认证','水牛汉堡，肉饼香香的，现煎的锅气骗不了人。',16,['#真香'],SRC_B)]},
+{id:'dayinxiang', area:'zhenmei', name:'大印象煲仔饭', short:'煲仔饭', em:'🍚', color:'#E8945A', price:18, dist:'骑行 10 分钟',
+ dishes:[{n:'煲仔饭',p:'送排骨汤',h:1}],
+ posts:[gp('锅巴收藏家','大印象的煲仔饭还送排骨汤，锅巴要自己刮，刮锅巴是煲仔饭的仪式感。',24,['#真香'],SRC_B)]},
+{id:'laoyeye', area:'zhenmei', name:'老爷爷肠粉店', short:'爷爷肠粉', em:'🥟', color:'#FFC46B', price:8, dist:'骑行 10 分钟',
+ dishes:[{n:'传统肠粉',p:'老店手艺 · 米香足',h:1}],
+ posts:[gp('米浆原教旨','老爷爷肠粉店，米浆香，酱油调得好，是圳美最朴实的好味道。',19,['#真香','#性价比之王'],SRC_B)]},
+
+/* ===== 5. 羌下松园居 ===== */
+{id:'kfc', area:'qiangxia', name:'KFC', short:'KFC', em:'🍗', color:'#E8743D', price:30, dist:'出门右转',
+ dishes:[{n:'疯狂星期四',p:'周四最挤 · v我50',h:1}],
+ posts:[gp('疯狂星期四文学家','KFC 周四人最多，疯狂星期四的梗浓度也最高，想安静吃就避开周四。',48,['#拼单','#避雷'],SRC_B)]},
+{id:'minghuobz', area:'qiangxia', name:'明火煲仔饭', short:'明火煲仔', em:'🍲', color:'#F2925A', price:20, dist:'出门右转',
+ dishes:[{n:'明火煲仔饭',p:'煲汤一绝',h:1}],
+ posts:[gp('煲汤鉴赏家','明火煲仔饭，煲汤一绝，饭焦金黄，汤头喝完不口渴，是用心煮的那种。',35,['#真香'],SRC_B)]},
+{id:'lanzhou', area:'qiangxia', name:'兰州拉面', short:'兰州拉面', em:'🍜', color:'#FFAB66', price:15, dist:'出门右转',
+ dishes:[{n:'牛肉拉面',p:'比学校的好吃',h:1}],
+ posts:[gp('面条筋道检测员','松园居的兰州拉面比学校食堂好吃，面是现拉的，汤是清的，辣椒是香的。',29,['#真香'],SRC_B)]},
+{id:'welucky', area:'qiangxia', name:'We Lucky Coffee', short:'WeLucky', em:'☕', color:'#D9A26B', price:25, dist:'出门右转',
+ dishes:[{n:'简餐 / 蛋糕',p:'不错 · 适合自习后',h:1}],
+ posts:[gp('咖啡因依赖者','We Lucky 的简餐和蛋糕都不错，赶完实验来块蛋糕，人生又能继续了。',13,['#真香'],SRC_B)]},
+{id:'liudapang', area:'qiangxia', name:'柳大胖螺蛳粉', short:'柳大胖', em:'🍲', color:'#C9925E', price:14, dist:'松园居 3 栋',
+ dishes:[{n:'螺蛳粉',p:'也是松园居但不在一条街',h:1}],
+ posts:[gp('螺蛳粉巡礼','柳大胖螺蛳粉在松园居 3 栋，也是松园居但不在一条街，别在小吃街那条找。',22,['#真香','#避雷'],SRC_B)]},
+{id:'zhushengmian', area:'qiangxia', name:'竹升面', short:'竹升面', em:'⚠️', color:'#C9B08A', price:15, dist:'出门右转',
+ dishes:[{n:'竹升面',p:'避雷 · 口感硬',x:1}],
+ posts:[gp('踩过的坑','竹升面这家避雷，面硬得像在嚼绳子，汤也一般，不推荐。',17,['#避雷'],SRC_B)]},
+{id:'jiugeng', area:'qiangxia', name:'酒更庄', short:'酒更庄', em:'🍷', color:'#B8746B', price:45, dist:'出门右转',
+ dishes:[{n:'小清吧',p:'氛围不错 · 较吵'}],
+ posts:[gp('清吧测评员','酒更庄是小清吧，酒单还行，就是周五晚上比较吵，想聊天建议工作日去。',9,['#避雷','#聚餐'],SRC_B)]},
+
+/* ===== 6. 中大澜庭 ===== */
+{id:'mcd', area:'lanting', name:'麦当劳', short:'麦当劳', em:'🍟', color:'#FFB800', price:25, dist:'小吃街过去一点',
+ dishes:[{n:'麦当劳',p:'人均 25r · 周末有优惠',h:1}],
+ posts:[gp('麦门信徒','麦门永存！麦当劳我吃吃吃。中大澜庭就在小吃街过去一点点，骑车 12 分钟。',99,['#真香','#拼单'],SRC_B)]},
+{id:'mixue', area:'lanting', name:'蜜雪冰城', short:'蜜雪冰城', em:'🍦', color:'#FF7A3D', price:7, dist:'小吃街过去一点',
+ dishes:[{n:'柠檬水 / 甜筒',p:'4r 柠檬水 · 2r 甜筒',h:1}],
+ posts:[gp('雪王孝子','蜜雪冰城 4 块柠檬水 2 块甜筒，穷鬼快乐水，没有之一。',87,['#穷鬼套餐','#性价比之王'],SRC_B)]},
+{id:'baozhugong', area:'lanting', name:'煲珠公', short:'煲珠公', em:'🧋', color:'#C98A5E', price:13, dist:'小吃街过去一点',
+ dishes:[{n:'老红糖珍珠奶茶',p:'珍珠现煲',h:1}],
+ posts:[gp('珍珠鉴赏家','煲珠公的珍珠是现煲的，软糯不硬芯，红糖味正。',18,['#真香'],SRC_B)]},
+{id:'jingege', area:'lanting', name:'金戈戈', short:'金戈戈', em:'🍗', color:'#E8A03D', price:30, dist:'小吃街过去一点',
+ dishes:[{n:'豉油鸡',p:'招牌 · 皮滑肉嫩',h:1}],
+ posts:[gp('豉油鸡品鉴','金戈戈的豉油鸡皮滑肉嫩，豉油香，半只鸡两个人吃刚好。',20,['#真香','#拼单'],SRC_B)]},
+{id:'laowanwan', area:'lanting', name:'老碗会', short:'老碗会', em:'🍜', color:'#FFAB66', price:22, dist:'小吃街过去一点',
+ dishes:[{n:'陕西面食',p:'biangbiang面 / 油泼面',h:1}],
+ posts:[gp('陕西面食雷达','老碗会的陕西面食做得像样，油泼面那一下泼油的声音就是广告。',23,['#真香'],SRC_B)]},
+{id:'yuanji', area:'lanting', name:'袁记', short:'袁记', em:'🥣', color:'#FFC46B', price:15, dist:'小吃街过去一点',
+ dishes:[{n:'汤水面食',p:'汤水好吃',h:1}],
+ posts:[gp('喝汤星人','袁记胜在汤水好吃，一碗热汤下肚，加班的怨气都能少一半。',12,['#真香'],SRC_B)]},
+{id:'xijie', area:'lanting', name:'喜姐炸串', short:'喜姐炸串', em:'🍢', color:'#FF8A3D', price:15, dist:'小吃街过去一点',
+ dishes:[{n:'炸串',p:'甜辣酱 · 年糕必点',h:1}],
+ posts:[gp('炸串酱料党','喜姐炸串的甜辣酱是灵魂，年糕裹满酱，一串下去直接回血。',25,['#真香'],SRC_B)]},
+{id:'starbucks', area:'lanting', name:'星巴克', short:'星巴克', em:'☕', color:'#7A5C44', price:40, dist:'小吃街过去一点',
+ dishes:[{n:'咖啡 / 环境',p:'适合自习装 X'}],
+ posts:[gp('环境党','星巴克胜在环境稳定，赶 deadline 换个地方坐坐，顺便被咖啡因续命。',8,['#续命水'],SRC_B)]},
+{id:'domino', area:'lanting', name:'达美乐披萨', short:'达美乐', em:'🍕', color:'#E8743D', price:40, dist:'小吃街过去一点',
+ dishes:[{n:'披萨',p:'周二周三 7 折',h:1}],
+ posts:[gp('七折数学家','达美乐周二周三打 7 折，宿舍拼一个大披萨，人均算下来比食堂贵不了多少（自我安慰）。',37,['#拼单','#真香'],SRC_B)]},
+{id:'ruixing', area:'lanting', name:'瑞幸咖啡', short:'瑞幸', em:'☕', color:'#D94F3D', price:12, dist:'小吃街过去一点',
+ dishes:[{n:'生椰拿铁等',p:'9.9–15r · 券后更香',h:1}],
+ posts:[gp('券神','瑞幸记得领券，券后 9.9 的生椰拿铁是打工人的公平。',31,['#穷鬼套餐','#续命水'],SRC_B)]},
+
+/* ===== 7. 光明科学城 ===== */
+{id:'cudi', area:'kexuecheng', name:'库迪咖啡', short:'库迪', em:'☕', color:'#B84A2A', price:10, dist:'科学城',
+ dishes:[{n:'全场咖啡',p:'9.9r 任选',h:1}],
+ posts:[gp('9块9战神','千万不要放过这个全场 9.9r。做实验做到头秃的时候，一杯冰美式就是续命水。',77,['#穷鬼套餐','#续命水'],SRC_A)]},
+{id:'ruixing2', area:'kexuecheng', name:'瑞幸咖啡', short:'瑞幸', em:'☕', color:'#D94F3D', price:12, dist:'科学城',
+ dishes:[{n:'咖啡',p:'库迪没开门就点它',h:1}],
+ posts:[gp('替补门将','瑞幸的定位：库迪没开门就会点瑞幸。科学城打工人两大续命水源之一。',26,['#续命水'],SRC_B)]},
+{id:'711', area:'kexuecheng', name:'7-11便利店', short:'7-11', em:'🏪', color:'#2A8B3D', price:15, dist:'科学城',
+ dishes:[{n:'关东煮 / 饭团',p:'7.11 有活动',h:1}],
+ posts:[gp('日历型选手','7-11 每月 7.11 有活动，关东煮和饭团是深夜实验室出来的救命补给。',15,['#夜宵','#穷鬼套餐'],SRC_B)]},
+
+/* ===== 8. 楼村 ===== */
+{id:'yicunyizhai', area:'loucun', name:'一村一寨（云南菜）', short:'一村一寨', em:'🌶️', color:'#C97A3D', price:55, dist:'打车 15 分钟',
+ dishes:[{n:'泡鲁达',p:'强推',h:1},{n:'蜂蜜辣子鸡',p:'强推',h:1},{n:'杂菌锅 / 炒饭',p:'也好吃'}],
+ posts:[gp('云南菜传教士','一村一寨：云南菜，强推泡鲁达和蜂蜜辣子鸡，杂菌锅和炒饭也好吃，人均 40r–70r。',71,['#真香','#聚餐'],SRC_B)]},
+{id:'guangtoulao', area:'loucun', name:'光头佬小食店', short:'光头佬', em:'🍢', color:'#FF9F5A', price:15, dist:'楼村',
+ dishes:[{n:'小食',p:'本地老店'}],
+ posts:[gp('老店粉','光头佬小食店，楼村的老字号，随便点不踩雷的那种。',13,['#宝藏小店'],SRC_B)]},
+{id:'meixian', area:'loucun', name:'梅县腌面', short:'梅县腌面', em:'🍜', color:'#FFAB66', price:12, dist:'楼村',
+ dishes:[{n:'腌面 + 三及第汤',p:'客家经典搭配',h:1}],
+ posts:[gp('客家人认证','梅县腌面配三及第汤，客家的经典搭配，腌面的猪油香是灵魂。',19,['#真香','#性价比之王'],SRC_B)]},
+{id:'shengjintang', area:'loucun', name:'圣金堂蛋糕店', short:'圣金堂', em:'🍰', color:'#F2C894', price:20, dist:'楼村',
+ dishes:[{n:'蛋糕 / 面包',p:'便宜大件'}],
+ posts:[gp('蛋糕性价比','圣金堂的蛋糕便宜大件，宿舍过生日必订，颜值味道都在线。',11,['#性价比之王'],SRC_B)]},
+{id:'baodian', area:'loucun', name:'包点广式早茶铺', short:'早茶铺', em:'🥟', color:'#FFC46B', price:15, dist:'楼村',
+ dishes:[{n:'虾饺',p:'1.5r–2r 一只 · 正宗',h:1},{n:'广式包点',p:'早茶款式多'}],
+ posts:[gp('早茶厅长','楼村的包点广式早茶铺很正宗，虾饺 1.5r–2r 一只，一笼才十几块，实现了虾饺自由。',33,['#真香','#性价比之王'],SRC_B)]},
+{id:'puning', area:'loucun', name:'普宁米浆肠粉', short:'普宁肠粉', em:'🥟', color:'#F98B6B', price:10, dist:'楼村新村店',
+ dishes:[{n:'米浆肠粉',p:'楼村新村店 · 酱汁独特',h:1}],
+ posts:[gp('米浆党','普宁米浆肠粉（楼村新村店），米浆浓，酱汁是普宁那种咸香，和广式完全两个流派。',16,['#真香'],SRC_B)]},
+{id:'huimao', area:'loucun', name:'绘猫路小吃街', short:'绘猫路', em:'🍺', color:'#8A6B4A', price:30, dist:'楼村',
+ dishes:[{n:'精酿啤酒',p:'夜市氛围',h:1},{n:'张记猪肉串',p:'招牌'},{n:'烤鸡腿 / 生滚粥',p:'深夜档'}],
+ posts:[gp('夜市漫步者','楼村绘猫路小吃街：精酿啤酒、张记猪肉串、烤鸡腿、生滚粥，晚上去氛围一绝，是楼村版本的「深夜食堂」。',28,['#夜宵','#聚餐','#宝藏小店'],SRC_B)]},
+
+/* ===== 9. 其他与外卖 ===== */
+{id:'meizhou', area:'qita', name:'美州纯手工汉堡', short:'手工汉堡', em:'🍔', color:'#FF9F5A', price:20, dist:'🛵 外卖 · 配送约 30 分钟',
+ dishes:[{n:'纯手工汉堡',p:'人均 20r',h:1}],
+ posts:[gp('第一个吃螃蟹的人','指南「其他外卖」里点名的一家：美州纯手工汉堡。谁来交个作业？我先收藏了。',12,['#外卖神店','#求测评'],SRC_A)]},
+{id:'huashun', area:'qita', name:'华顺工业园美食', short:'华顺工业园', em:'🥢', color:'#FFB84D', price:12, dist:'华顺工业园附近',
+ dishes:[{n:'广西扣肉粉',p:'扣肉厚切',h:1},{n:'启心烘焙',p:'面包甜品'}],
+ posts:[gp('工业区觅食记','华顺工业园附近藏着广西扣肉粉和启心烘焙，扣肉厚切，面包新鲜，属于「地址说了别人也不信」的宝藏。',21,['#宝藏小店','#真香'],SRC_B)]},
+{id:'moxiang', area:'qita', name:'天安云谷·墨相', short:'墨相', em:'🍸', color:'#6B5B8A', price:50, dist:'天安云谷',
+ dishes:[{n:'早C晚A',p:'白天咖啡 · 晚上小酒',h:1}],
+ posts:[gp('早C晚A实践家','天安云谷的墨相，早 C 晚 A 的具象化：白天是咖啡馆，晚上是小酒馆，一店两吃。',14,['#私藏','#聚餐'],SRC_B)]}
+];
+
+/* ============================================================
+   ☁ Supabase 接入层
+   ============================================================ */
+
+/* ==== Supabase 修改处 ②：项目凭据 ==== */
+const SUPABASE_URL      = 'https://fsrtwwhefectrqyzvofi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_qIRPMjWFJc2M9OlUawroKg_ldv3wzeI';
+
+/* ==== Supabase 修改处 ③：初始化客户端（凭据异常时自动降级本地模式）==== */
+const SB_URL_OK = /^https:\/\/[a-z0-9-]+\.supabase\.(co|in)\/?$/i.test(SUPABASE_URL.trim());
+/* 同时兼容新版 sb_publishable_xxx 与旧版 JWT 格式的 anon key */
+const SB_KEY_OK = /^(eyJ[\w-]+\.[\w-]+\.[\w-]+|sb_publishable_[\w-]+|sb_anon_[\w-]+)$/.test(SUPABASE_ANON_KEY.trim());
+const SB_PLACEHOLDER = /x{6,}/i.test(SUPABASE_URL + SUPABASE_ANON_KEY);
+let sb = null;
+if(SB_URL_OK && SB_KEY_OK && !SB_PLACEHOLDER && window.supabase && window.supabase.createClient){
+  sb = window.supabase.createClient(SUPABASE_URL.trim(), SUPABASE_ANON_KEY.trim());
+  console.log('[SUATerFood] Supabase 客户端已就绪 →', SUPABASE_URL);
+}else{
+  console.warn('[SUATerFood] Supabase 凭据无效，运行在本地演示模式');
+}
+
+/* ==== Supabase 修改处 ④：访客唯一标识（私有店铺/点赞去重的核心）==== */
+const VISITOR_KEY = 'suaterfood_visitor_id';
+const VISITOR_ID = (function(){
+  let v = '';
+  try{
+    v = localStorage.getItem(VISITOR_KEY) || '';
+    /* 兼容上一版遗留的 key，避免老用户突然变成"新访客" */
+    if(!v){
+      const legacy = localStorage.getItem('suaterfood.visitor.id');
+      if(legacy && legacy.length >= 8) v = legacy;
+    }
+    if(!v){
+      v = (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'v-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    }
+    localStorage.setItem(VISITOR_KEY, v);
+  }catch(e){
+    if(!v) v = 'v-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+  return v;
+})();
+console.log('[SUATerFood] visitor_id =', VISITOR_ID);
+
+/* ============================================================
+   本地缓存层（只负责"记住我是谁、我赞过谁"）
+   ============================================================ */
+const LS_KEY = {
+  custom : 'suaterfood.custom',
+  likes  : 'suaterfood.mylikes',
+  myRate : 'suaterfood.myratings',
+  guide  : 'suaterfood.guidelikes',
+  cache  : 'suaterfood.cache'
+};
+
+const state = {
+  ratings    : {},            // shop_id -> [5,4,3...]  shops_ratings 聚合
+  posts      : {},            // shop_id -> [post...]   posts 表聚合
+  myLikes    : new Set(),     // 我点过赞的 pid（含 'p:<uuid>' / 'g:<shop>:<i>'）
+  myRatings  : {},            // shop_id -> { rowId, index, rating }
+  guideLikes : {},            // 指南帖本地点赞增量（指南帖不在云端表里）
+  custom     : [],            // 我添加的自定义店铺
+  online     : false
+};
+
+const store = {
+  read(k, def){
+    try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; }catch(e){ return def; }
+  },
+  write(k, v){
+    try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
+  },
+  load(){
+    state.custom     = this.read(LS_KEY.custom, []);
+    state.myLikes    = new Set(this.read(LS_KEY.likes, []));
+    state.myRatings  = this.read(LS_KEY.myRate, {});
+    state.guideLikes = this.read(LS_KEY.guide, {});
+    const cache = this.read(LS_KEY.cache, null);
+    if(cache){
+      state.ratings = cache.ratings || {};
+      state.posts   = cache.posts   || {};
+    }
+  },
+  save(){
+    this.write(LS_KEY.custom, state.custom);
+    this.write(LS_KEY.likes, Array.from(state.myLikes));
+    this.write(LS_KEY.myRate, state.myRatings);
+    this.write(LS_KEY.guide, state.guideLikes);
+    this.write(LS_KEY.cache, { ratings: state.ratings, posts: state.posts });
+  }
+};
+
+/* ============================================================
+   状态
+   ============================================================ */
+let activeArea = 'campus';
+let feedTab = 'live';
+let currentDetail = null;
+let draftStars = 0, draftTags = [];
+const SPIN = { rot:0, spinning:false, pool:[] };
+
+/* ============================================================
+   数据视图：店铺 / 评分 / 帖子
+   ============================================================ */
+/* ==== Supabase 修改处 ⑤：云端 shops 行 → 本地店铺对象 ==== */
+function normalizeShop(row){
+  const dish = (row.dish || '').trim();
+  const parts = dish.split('·');
+  return {
+    id     : 'c_' + row.id,          // 本地唯一 id（posts/shops_ratings 的 shop_id 用它）
+    rowId  : row.id,                 // 云端主键，便于以后更新/删除
+    area   : row.area || 'custom',
+    name   : row.name || '未命名店铺',
+    why    : row.why || '',
+    dishRaw: dish,
+    custom : true,
+    dishes : dish
+      ? [{ n: parts[0].trim(), p: parts.slice(1).join('·').trim(), h: 1 }]
+      : []
+  };
+}
+
+const allCustom = () => state.custom.map(c => Object.assign({
+  em:'🌟', color:'#FF9F5A', price:0, dist:'', custom:true, posts:[], dishes:[],
+  short:(c.name||'').slice(0,4)
+}, c));
+
+const CAMPUS_IDS = ['xianxing','yuangeng','shuguang','fendouzhe','bafenbao','shenzhou','gaozhongbu'];
+const shopsOf = area => area==='custom'
+  ? allCustom()
+  : area==='campus'
+    ? CAMPUS_IDS.map(id=>SHOPS.find(s=>s.id===id)).filter(Boolean)
+        .concat(allCustom().filter(c=>c.area==='campus'))
+    : SHOPS.filter(s=>s.area===area).concat(allCustom().filter(c=>c.area===area));
+const shopById = id => SHOPS.find(s=>s.id===id) || allCustom().find(c=>c.id===id);
+
+/* 评分：shops_ratings 按 shop_id 求平均 */
+function ratingOf(s){
+  const arr = state.ratings[s.id] || [];
+  if(!arr.length) return { score:0, count:0 };
+  const sum = arr.reduce((a,b)=>a + (Number(b)||0), 0);
+  return { score: sum / arr.length, count: arr.length };
+}
+
+/* 云端 posts 行 → 统一 post 对象 */
+function normalizePost(row){
+  let tags = row.tags;
+  if(typeof tags === 'string') tags = tags ? tags.split(/[,，]/).map(t=>t.trim()).filter(Boolean) : [];
+  if(!Array.isArray(tags)) tags = [];
+  return {
+    pid      : 'p:' + row.id,
+    remoteId : row.id,
+    shopId   : row.shop_id,
+    u        : row.user_name || '匿名同学',
+    t        : row.content || '',
+    stars    : Number(row.stars) || 0,
+    g        : tags,
+    likes    : Number(row.likes) || 0,
+    time     : relTime(row.created_at),
+    createdAt: row.created_at,
+    remote   : true,
+    guide    : false
+  };
+}
+
+/* 预置指南帖 → 统一 post 对象（不计分，点赞走本地增量） */
+function guidePosts(s){
+  return (s.posts || []).map((p, i) => ({
+    pid      : 'g:' + s.id + ':' + i,
+    remoteId : null,
+    shopId   : s.id,
+    u        : p.u,
+    t        : p.t,
+    stars    : 0,
+    g        : p.g || [],
+    likes    : p.l || 0,
+    time     : '来自指南',
+    src      : p.s || SRC_A,
+    remote   : false,
+    guide    : true
+  }));
+}
+
+const livePosts = s => state.posts[s.id] || [];
+
+/* 点赞总数：云端帖用 posts.likes；指南帖用预置数 + 本地增量 */
+function likeTotal(p){
+  if(p.remote) return p.likes || 0;
+  return (p.likes || 0) + (state.guideLikes[p.pid] || 0);
+}
+const isLiked = pid => state.myLikes.has(pid);
+
+function findPost(shopId, pid){
+  if(pid.indexOf('p:') === 0) return livePosts(shopById(shopId)).find(p => p.pid === pid);
+  const s = shopById(shopId);
+  return s ? guidePosts(s).find(p => p.pid === pid) : null;
+}
+
+/* ============================================================
+   工具
+   ============================================================ */
+function starsHTML(score, lit){
+  if(!lit) return '<span class="stars">★★★★★</span>';
+  const pct = Math.max(0, Math.min(100, score/5*100));
+  return '<span class="stars">★★★★★<span class="lit" style="width:'+pct+'%">★★★★★</span></span>';
+}
+function scoreHTML(s){
+  const r = ratingOf(s);
+  if(r.count>0){
+    return '<span class="num">'+r.score.toFixed(1)+'</span>'+starsHTML(r.score, true)+
+           '<span class="fc-count">'+r.count+' 人评分</span>';
+  }
+  return '<span class="stars">★★★★★</span><span class="num zero">🆕 暂无评分</span><span class="fc-count">(0人) · 做第一个吃螃蟹的人</span>';
+}
+function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function relTime(iso){
+  if(!iso) return '刚刚';
+  const d = new Date(iso), diff = (Date.now() - d.getTime()) / 1000;
+  if(isNaN(diff)) return '刚刚';
+  if(diff < 60) return '刚刚';
+  if(diff < 3600) return Math.floor(diff/60) + ' 分钟前';
+  if(diff < 86400) return Math.floor(diff/3600) + ' 小时前';
+  if(diff < 86400*7) return Math.floor(diff/86400) + ' 天前';
+  return (d.getMonth()+1) + '月' + d.getDate() + '日';
+}
+
+/* ---------- toast（同步状态） ---------- */
+let toastTimer = null;
+function toast(txt, type){
+  const t = $('#toast');
+  $('#toastTxt').textContent = txt;
+  $('#toastSpin').style.display = type==='busy' ? '' : 'none';
+  t.classList.toggle('ok', type==='ok');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  if(type!=='busy') toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function cloudUI(st, txt){
+  const d = $('#cloudDot');
+  d.classList.toggle('busy', st==='busy');
+  d.classList.toggle('on', st==='on');
+  $('#cloudTxt').textContent = txt;
+}
+/* 操作结束后恢复顶部状态灯 */
+function cloudOk(){
+  if(!sb) cloudUI('on','本地模式');
+  else cloudUI('on', state.online ? '实时在线' : '云端已连接');
+}
+
+/* ============================================================
+   ☁ 云端读写
+   ============================================================ */
+
+/* ==== Supabase 修改处 ⑥：页面初始化，一次性拉取四份数据 ==== */
+async function fetchAll(){
+  if(!sb) return false;
+  cloudUI('busy','拉取数据');
+  document.getElementById('cardFlow').classList.add('loading');
+  try{
+    const [rt, ps, sh] = await Promise.all([
+      /* 1) 所有店铺的评分 */
+      sb.from('shops_ratings').select('id, shop_id, rating'),
+      /* 2) 所有帖子 */
+      sb.from('posts')
+        .select('id, shop_id, user_name, content, stars, tags, likes, created_at')
+        .order('created_at', { ascending:false })
+        .limit(500),
+      /* 3) 只拉「我自己」添加的私有店铺 ★ 关键过滤 */
+      sb.from('shops')
+        .select('id, visitor_id, area, name, dish, why, created_at')
+        .eq('visitor_id', VISITOR_ID)
+        .order('created_at', { ascending:true })
+    ]);
+    if(rt.error) throw rt.error;
+    if(ps.error) throw ps.error;
+    if(sh.error) throw sh.error;
+
+    /* --- 评分聚合：shop_id -> [5,4,4...] --- */
+    const rmap = {};
+    (rt.data || []).forEach(r=>{
+      (rmap[r.shop_id] = rmap[r.shop_id] || []).push(Number(r.rating) || 0);
+    });
+    state.ratings = rmap;
+
+    /* --- 帖子聚合：保留尚未上云的本地帖 --- */
+    const localOnly = {};
+    Object.keys(state.posts).forEach(k=>{
+      const arr = (state.posts[k] || []).filter(p => !p.remoteId);
+      if(arr.length) localOnly[k] = arr;
+    });
+    const pmap = {};
+    (ps.data || []).forEach(row=>{
+      (pmap[row.shop_id] = pmap[row.shop_id] || []).push(normalizePost(row));
+    });
+    Object.keys(localOnly).forEach(k=>{ pmap[k] = localOnly[k].concat(pmap[k] || []); });
+    state.posts = pmap;
+
+    /* --- 我的私有店铺：云端为准，合并本地遗留数据 --- */
+    const localPending = state.custom.filter(c => !c.rowId);
+    state.custom = (sh.data || []).map(normalizeShop).concat(localPending);
+
+    /* --- 我在云端点过赞的帖子（跨设备也无法重复点赞）--- */
+    const lk = await sb.from('post_likes').select('post_id').eq('visitor_id', VISITOR_ID);
+    if(!lk.error && lk.data){
+      lk.data.forEach(r => state.myLikes.add('p:' + r.post_id));
+    }
+
+    state.online = true;
+    store.save();
+    cloudUI('on','云端已连接');
+    return true;
+  }catch(e){
+    console.error('[Supabase] 拉取失败：', e);
+    cloudUI('on','本地缓存');
+    toast('⚠ 云端读取失败，先展示本地缓存');
+    return false;
+  }finally{
+    document.getElementById('cardFlow').classList.remove('loading');
+  }
+}
+
+/* 发帖成功后：重新拉取该店铺的帖子，保证与云端完全一致 */
+async function refreshPosts(shopId){
+  if(!sb) return;
+  const { data, error } = await sb.from('posts')
+    .select('id, shop_id, user_name, content, stars, tags, likes, created_at')
+    .eq('shop_id', shopId)
+    .order('created_at', { ascending:false });
+  if(error) throw error;
+  const localOnly = (state.posts[shopId] || []).filter(p => !p.remoteId);
+  state.posts[shopId] = localOnly.concat((data || []).map(normalizePost));
+}
+
+/* 打分成功后：重新拉取该店铺的评分行，重算平均分 */
+async function refreshRatings(shopId){
+  if(!sb) return;
+  const { data, error } = await sb.from('shops_ratings')
+    .select('id, shop_id, rating')
+    .eq('shop_id', shopId);
+  if(error) throw error;
+  state.ratings[shopId] = (data || []).map(r => Number(r.rating) || 0);
+}
+
+/* 实时订阅：别人发帖 / 点赞，本页无需刷新 */
+function subscribeRealtime(){
+  if(!sb) return;
+  try{
+    sb.channel('suaterfood-posts-' + VISITOR_ID.slice(0, 8))
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'posts' },
+          payload => applyRemoteInsert(payload.new))
+      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'posts' },
+          payload => applyRemoteUpdate(payload.new))
+      .subscribe(status=>{
+        if(status === 'SUBSCRIBED'){
+          console.log('[Supabase] Realtime 已订阅 posts 表');
+          cloudUI('on','实时在线');
+        }
+      });
+  }catch(e){
+    console.warn('[Supabase] Realtime 订阅失败：', e);
+  }
+}
+
+function applyRemoteInsert(row){
+  if(!row || !row.id) return;
+  const list = state.posts[row.shop_id] || (state.posts[row.shop_id] = []);
+  if(list.some(p => p.remoteId === row.id)) return;      // 自己插入的那条，去重
+
+  list.unshift(normalizePost(row));
+  store.save();
+  renderNav(); renderCards(); updateStats();
+  if(currentDetail && currentDetail.id === row.shop_id) refreshDrawerBody();
+
+  const nm = (shopById(row.shop_id) || {}).name || '某家店';
+  toast('🔔 「' + nm + '」有新帖子，已自动刷新');
+}
+
+function applyRemoteUpdate(row){
+  if(!row || !row.id) return;
+  const list = state.posts[row.shop_id] || [];
+  const p = list.find(x => x.remoteId === row.id);
+  if(!p) return;
+  if(row.likes != null) p.likes = Number(row.likes) || 0;
+  const btn = document.querySelector('.like-btn[data-like="' + p.pid + '"]');
+  if(btn) paintLike(btn, likeTotal(p), isLiked(p.pid), false);
+}
+
+/* ============================================================
+   板块导航
+   ============================================================ */
+function renderNav(){
+  $('#navList').innerHTML = AREAS.map(a=>{
+    const n = shopsOf(a.id).length;
+    return '<button class="nav-item'+(a.id===activeArea?' active':'')+'" data-area="'+a.id+'">'+
+      '<span class="em">'+a.em+'</span><span><span class="nm">'+a.name+'</span><br>'+
+      '<span class="ds">'+a.sub+'</span></span><span class="ct">'+n+'</span></button>';
+  }).join('');
+  $('#navCur').textContent = areaOf(activeArea).name;
+}
+function openNav(){
+  $('#navPanel').classList.add('show'); $('#navMask').classList.add('show');
+  $('#navToggle').classList.add('open');
+  lock(true);
+}
+function closeNav(){
+  $('#navPanel').classList.remove('show'); $('#navMask').classList.remove('show');
+  $('#navToggle').classList.remove('open');
+  lock(false);
+}
+function switchArea(id){
+  if(id===activeArea){ closeNav(); return; }
+  closeNav();
+  activeArea = id;
+  feedTab = 'live';
+  const c = $('#content');
+  c.classList.add('fading');
+  setTimeout(()=>{ renderArea(); c.classList.remove('fading'); }, 260);
+}
+function lock(on){ document.body.classList.toggle('locked', on); }
+
+/* ============================================================
+   命运转盘（动态扇区 · 支持密集文字）
+   ============================================================ */
+const PALETTE = ['#FFB87A','#FFD9A8','#FFA05C','#FFE3BD','#FF9757','#FFCFA0'];
+function poolOf(area){ return shopsOf(area); }
+
+function buildWheel(){
+  if(SPIN.spinning){ /* 板块切换打断旋转：强制复位，避免状态卡死 */
+    SPIN.spinning = false; $('#spinBtn').disabled = false;
+  }
+  const pool = poolOf(activeArea);
+  SPIN.pool = pool;
+  const svg = $('#wheelSvg'), wrap = $('#wheelWrap'), guard = $('#wheelGuard');
+  if(pool.length < 2){
+    wrap.style.display = 'none'; guard.style.display = 'flex';
+    $('#spinBtn').disabled = true;
+    if(activeArea==='custom'){
+      $('#guardTitle').textContent = '自定义区还没有店铺';
+      $('#guardText').textContent = '再添加一家店，转盘才能转起来哦！点右下角 ➕ 开始～';
+    }else{
+      $('#guardTitle').textContent = '这个板块还没有店铺';
+      $('#guardText').textContent = '点击右下角 ➕ 添加新店，转盘就能转起来。';
+    }
+    return;
+  }
+  wrap.style.display = ''; guard.style.display = 'none';
+  $('#spinBtn').disabled = false;
+
+  const n = pool.length, seg = 360/n;
+  const R = 156, XC = 170, YC = 170;
+  const pt = a => { const rad=(a)*Math.PI/180; return [XC + R*Math.sin(rad), YC - R*Math.cos(rad)]; };
+  const fs = n<=4 ? 15 : n<=6 ? 14.5 : n<=8 ? 14 : n<=10 ? 13 : n<=14 ? 12 : n<=20 ? 11 : 10.5;
+  let paths = '';
+  for(let i=0;i<n;i++){
+    const a0 = i*seg, a1 = (i+1)*seg;
+    const [x0,y0]=pt(a0), [x1,y1]=pt(a1);
+    let color = PALETTE[i % PALETTE.length];
+    if(i===n-1 && color===PALETTE[0]) color = PALETTE[3];
+    const large = seg>180 ? 1 : 0;
+    paths += '<path class="sector" data-i="'+i+'" d="M'+XC+' '+YC+' L'+x0.toFixed(1)+' '+y0.toFixed(1)+
+             ' A'+R+' '+R+' 0 '+large+' 1 '+x1.toFixed(1)+' '+y1.toFixed(1)+' Z" fill="'+color+'"/>';
+  }
+  let labels = '';
+  for(let i=0;i<n;i++){
+    const bis = i*seg + seg/2;
+    const shop = pool[i];
+    let inner = '';
+    if(n<=10){
+      const name = (shop.short||shop.name).slice(0,5);
+      inner = '<text class="wl h" x="'+XC+'" y="'+(YC - R*0.60 + fs/3)+'" text-anchor="middle" font-size="'+fs+'">'+esc(name)+'</text>';
+    }else{
+      const chars = (shop.short||shop.name).slice(0,4).split('');
+      const y0 = YC - R + 24;
+      const step = fs + 2;
+      inner = chars.map((ch,k)=>'<text class="wl" x="'+XC+'" y="'+(y0 + k*step)+'" text-anchor="middle" font-size="'+fs+'">'+esc(ch)+'</text>').join('');
+    }
+    labels += '<g transform="rotate('+bis.toFixed(2)+' '+XC+' '+YC+')">'+inner+'</g>';
+  }
+  svg.innerHTML = paths + labels +
+    '<circle cx="170" cy="170" r="'+(n<=10?170:172)+'" fill="none" stroke="#FF7A3D" stroke-width="7" opacity=".9"/>'+
+    '<g class="wheel-hub-btn" id="hubBtn"><circle class="hub" cx="170" cy="170" r="42" fill="#fff" stroke="#FFD9BF" stroke-width="3"/>'+
+    '<text x="170" y="163" text-anchor="middle" font-size="18">🍀</text>'+
+    '<text x="170" y="183" text-anchor="middle" font-size="10" fill="#A18B7C" font-weight="700">命运</text></g>';
+  /* 恢复累计角度（不跳变） */
+  const wg = svg.querySelector('#wheelG') || makeWheelG(svg);
+  wg.style.transition = 'none';
+  wg.style.transform = 'rotate('+SPIN.rot+'deg)';
+  void svg.getBoundingClientRect();
+  wg.style.transition = '';
+  $('#wheelNote').textContent = '当前板块 '+n+' 家店铺参与抽取 · ' + (n>10 ? '扇区较多，字都排开了，缘分更随机' : '转盘扇区随板块动态生成');
+}
+function makeWheelG(svg){
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.id = 'wheelG';
+  while(svg.firstChild) g.appendChild(svg.firstChild);
+  svg.appendChild(g);
+  return g;
+}
+
+function spin(){
+  if(SPIN.spinning) return;
+  const pool = SPIN.pool;
+  if(!pool || pool.length < 2){ toast('这个板块还没有可以抽的店铺'); return; }
+  const svg = $('#wheelSvg');
+  const wg = svg.querySelector('#wheelG');
+  if(!wg){ toast('转盘初始化中，再点一次'); buildWheel(); return; }
+  SPIN.spinning = true;
+  $('#spinBtn').disabled = true;
+  svg.querySelectorAll('.sector').forEach(p=>p.classList.remove('win'));
+
+  const n = pool.length, seg = 360/n;
+  const target = Math.floor(Math.random()*n);
+  const mid = target*seg + seg/2;
+  const land = (360 - mid%360 + 360) % 360;
+  const cur = SPIN.rot%360;
+  const delta = ((land - cur)%360 + 360)%360;
+  SPIN.rot += 360*5 + delta;
+
+  wg.addEventListener('transitionend', function done(){
+    wg.removeEventListener('transitionend', done);
+    SPIN.spinning = false;
+    $('#spinBtn').disabled = false;
+    const win = svg.querySelector('.sector[data-i="'+target+'"]');
+    if(win) win.classList.add('win');
+    showResult(pool[target]);
+  });
+  wg.style.transform = 'rotate('+SPIN.rot+'deg)';
+}
+
+function showResult(s){
+  if(!s) return;
+  const r = ratingOf(s);
+  $('#resEm').textContent = s.em || '🌟';
+  $('#resName').textContent = s.name;
+  $('#resArea').textContent = areaOf(s.area).em + ' ' + areaOf(s.area).name + ' · ' + (areaOf(s.area).sub||'');
+  if(r.count>0){
+    $('#resScore').textContent = r.score.toFixed(1);
+    $('#resScore').className = 'num';
+    $('#resStars').innerHTML = starsHTML(r.score, true);
+    $('#resCount').textContent = r.count+' 人评分';
+  }else{
+    $('#resScore').textContent = '🆕 暂无评分 · 等你点亮';
+    $('#resScore').className = 'num zero';
+    $('#resStars').innerHTML = '';
+    $('#resCount').textContent = '';
+  }
+  const latest = livePosts(s)[0] || (s.posts && s.posts[0]);
+  $('#resPost').innerHTML = latest
+    ? '<b>' + esc(latest.u) + '：</b>' + esc(latest.t).slice(0,80) + (latest.g&&latest.g.length ? '<div style="margin-top:5px;font-size:11px;color:#B05E1E">'+latest.g.map(esc).join(' ')+'</div>' : '')
+    : '还没有任何声音，进去发第一条吧！';
+  $('#resMask').dataset.shop = s.id;
+  openModal('resMask');
+}
+
+/* ============================================================
+   统计条
+   ============================================================ */
+function updateStats(){
+  const shops = shopsOf(activeArea);
+  $('#statShops').textContent = shops.length;
+  let n = 0;
+  shops.forEach(s => { n += (s.posts ? s.posts.length : 0) + livePosts(s).length; });
+  $('#statPosts').textContent = n;
+  const rated = shops.map(ratingOf).filter(r=>r.count>0);
+  $('#statAvg').textContent = rated.length ? (rated.reduce((a,r)=>a+r.score,0)/rated.length).toFixed(1) : '—';
+}
+
+/* ============================================================
+   卡片瀑布流
+   ============================================================ */
+function cardHTML(s){
+  const r = ratingOf(s);
+  const area = areaOf(s.area);
+  const live = livePosts(s)[0];
+  const guide = s.posts && s.posts[0];
+  const top = live || guide;
+  const dishes = (s.dishes||[]).slice(0,3).map(d=>esc(d.n)).join(' · ');
+  return '<article class="food-card" data-shop="'+s.id+'">'+
+    (s.custom?'<span class="fc-new">我添加的</span>':'')+
+    '<div class="fc-top"><div class="fc-em" style="background:'+(s.color||'#FFE3BD')+'33">'+(s.em||'🌟')+'</div>'+
+    '<div><div class="fc-name">'+esc(s.name)+'</div><div class="fc-area">'+area.em+' '+esc(area.name)+(s.dist?' · '+esc(s.dist):'')+'</div></div></div>'+
+    '<div class="fc-score">'+scoreHTML(s)+'</div>'+
+    ((s.price>0||s.tags&&s.tags.length)?'<div class="fc-chips">'+
+      (s.price>0?'<span class="chip">💰 人均 '+s.price+'r</span>':'')+
+      ((s.tags||[]).slice(0,3).map(t=>'<span class="chip gray">'+esc(t)+'</span>').join(''))+
+    '</div>':'')+
+    (dishes?'<div class="fc-dish"><b>招牌：</b>'+dishes+'</div>':'')+
+    (top ? '<div class="fc-post"><div class="ph"><span class="src">来源：'+esc(live?'社区实时':(top.s||'新生指南'))+'</span><span>👍 '+(live?likeTotal(live):(top.l||0))+'</span></div>'+
+      '<div class="txt">'+esc(top.t)+'</div></div>'
+      : (s.custom ? '<div class="fc-post"><div class="txt">'+esc(s.why||'新店开业 · 求测评')+'</div></div>' : ''))+
+  '</article>';
+}
+function renderCards(){
+  const shops = shopsOf(activeArea);
+  let html = shops.map(cardHTML).join('');
+  if(activeArea==='custom' && shops.length===0){
+    html = '<div class="empty-card"><b>🌟 这里还是一片待探索的荒原</b>'+
+      '自定义区聚合你添加的所有店铺。添加的第一家店会立刻登上这里的转盘！'+
+      '<button id="emptyAdd">➕ 添加第一家店</button></div>';
+  }
+  $('#cardFlow').innerHTML = html;
+  const a = areaOf(activeArea);
+  $('#areaTitle').textContent = a.em + ' ' + a.name;
+  $('#areaCount').textContent = shops.length + ' 家';
+  $('#areaDesc').textContent = a.sub;
+}
+
+/* ============================================================
+   详情抽屉
+   ============================================================ */
+function openDrawer(id){
+  const s = shopById(id);
+  if(!s) return;
+  currentDetail = s;
+  feedTab = 'live';
+  draftStars = (state.myRatings[s.id] && state.myRatings[s.id].rating) || 0;
+  draftTags = [];
+  renderDrawer(s);
+  $('#drawer').classList.add('show');
+  $('#drawerMask').classList.add('show');
+  lock(true);
+}
+function closeDrawer(){
+  $('#drawer').classList.remove('show');
+  $('#drawerMask').classList.remove('show');
+  lock(false);
+  currentDetail = null;
+}
+function renderDrawer(s){
+  const r = ratingOf(s);
+  const a = areaOf(s.area);
+  $('#drHead').style.background = 'linear-gradient(135deg,'+(s.color||'#FF9F5A')+',#FFB877)';
+  $('#drHead').innerHTML =
+    '<button class="dr-close" id="drClose">✕</button>'+
+    '<div class="em">'+(s.em||'🌟')+'</div><h3>'+esc(s.name)+'</h3>'+
+    '<div class="meta">'+a.em+' '+esc(a.name)+' · '+esc(a.sub)+(s.dist?' · '+esc(s.dist):'')+(s.price>0?' · 人均 '+s.price+'r':'')+'</div>'+
+    '<div class="score-line">'+
+      (r.count>0
+        ? '<span class="num">'+r.score.toFixed(1)+'</span>'+starsHTML(r.score,true)+'<span class="ct">'+r.count+' 人评分</span>'
+        : '<span class="num zero">🆕 暂无评分 (0人)</span><span class="ct">你的星星会实时点亮平均分</span>')+
+    '</div>';
+  renderDrawerBody(s);
+}
+
+/* 只刷新抽屉内容（头部评分 + 讨论区），保留输入框文字与滚动位置 */
+function refreshDrawerBody(){
+  if(!currentDetail) return;
+  const s = shopById(currentDetail.id);
+  if(!s) return;
+  currentDetail = s;
+  const body = $('#drBody');
+  const sc = body.scrollTop;
+  const ta = $('#postText');
+  const txt = ta ? ta.value : '';
+  const focused = ta && document.activeElement === ta;
+  renderDrawer(s);          /* 连 #drHead 的评分一起重算 */
+  body.scrollTop = sc;
+  const nt = $('#postText');
+  if(nt && txt){ nt.value = txt; if(focused) nt.focus(); }
+}
+
+function renderDrawerBody(s){
+  const live = livePosts(s), guide = s.posts || [];
+  const quick = QUICK_TAGS[s.area] || QUICK_TAGS.custom;
+  const dishHTML = (s.dishes||[]).length
+    ? (s.dishes).map(d=>'<div class="dish"><span class="n">'+esc(d.n)+(d.h?'<em>招牌</em>':'')+(d.x?'<em style="background:#E85D4A">避雷</em>':'')+'</span><span class="p">'+esc(d.p)+'</span></div>').join('')
+    : '<div class="dish"><span class="n">暂无招牌菜信息</span><span class="p">等你在评论区补上</span></div>';
+  const feedHTML =
+    '<div class="feed-tabs">'+
+      '<button class="ftab'+(feedTab==='live'?' on':'')+'" data-ft="live">💬 实时讨论 ('+live.length+')</button>'+
+      '<button class="ftab'+(feedTab==='guide'?' on':'')+'" data-ft="guide">🔥 学长学姐指南 ('+guide.length+')</button>'+
+    '</div>'+
+    (feedTab==='live'
+      ? composerHTML(quick) + (live.length
+          ? live.map(p=>postHTML(p)).join('')
+          : '<div class="feed-empty">这里还没有人发帖 😴<br>快看看学长学姐当年踩过的坑，或者<b>写下你的第一条评价</b>！</div>')
+      : (guide.length
+          ? guidePosts(s).map(p=>postHTML(p)).join('')
+          : '<div class="feed-empty">这个板块的指南还没收录到它，等补充。</div>'));
+  $('#drBody').innerHTML =
+    '<div class="dr-sec"><h4>🍽️ 招牌与价格</h4>'+dishHTML+'</div>'+
+    '<div class="dr-sec"><h4>🏘️ 讨论社区</h4>'+feedHTML+'</div>';
+}
+
+/* ==== Supabase 修改处 ⑦：点赞按钮渲染（局部更新，不整块重绘）==== */
+function postHTML(p){
+  const liked = isLiked(p.pid);
+  const stars = p.stars ? starsHTML(p.stars, true) : '';
+  return '<div class="post" data-pid="'+p.pid+'">'+
+    '<div class="ph"><div class="av">'+esc((p.u||'SUATer')[0])+'</div>'+
+    '<div><div class="who">'+esc(p.u||'匿名同学')+(p.remote?'<span style="font-size:10px;color:#FF7A3D"> · 社区</span>':'')+'</div>'+
+    '<div class="when">'+esc(p.time||'来自指南')+'</div></div>'+
+    (p.guide?'<span class="src-tag">来源：'+esc(p.src||'新生指南')+'</span>':'')+
+    (stars?'<span style="margin-left:auto">'+stars+'</span>':'')+
+    '</div>'+
+    '<div class="txt">'+esc(p.t)+'</div>'+
+    ((p.g&&p.g.length)?'<div class="tags">'+p.g.map(t=>'<span>'+esc(t)+'</span>').join('')+'</div>':'')+
+    '<div class="ft">'+
+      '<button class="like-btn'+(liked?' did':'')+'" data-like="'+p.pid+'" aria-pressed="'+liked+'">'+
+        '<span class="lk-ico">'+(liked?'❤️':'👍')+'</span><span class="lk-num">'+likeTotal(p)+'</span>'+
+      '</button>'+
+    '</div>'+
+  '</div>';
+}
+
+/* 只改这一个按钮的 UI，保证"点完立刻 +1 并高亮" */
+function paintLike(btn, n, liked, pop){
+  if(!btn) return;
+  btn.classList.toggle('did', !!liked);
+  btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+  const ico = btn.querySelector('.lk-ico');
+  const num = btn.querySelector('.lk-num');
+  if(ico) ico.textContent = liked ? '❤️' : '👍';
+  if(num) num.textContent = n;
+  if(pop){
+    btn.classList.remove('pop');
+    void btn.offsetWidth;
+    btn.classList.add('pop');
+  }
+}
+
+function composerHTML(quick){
+  draftTags = draftTags.filter(t=>quick.indexOf(t)>=0);
+  return '<div class="composer">'+
+    '<div class="row"><span class="lbl">打分</span>'+
+      [1,2,3,4,5].map(v=>'<button class="star-btn'+(v<=draftStars?' on':'')+'" data-star="'+v+'">★</button>').join('')+
+      '<span class="lbl" style="margin-left:auto">'+(draftStars?draftStars+' 星':'还没点亮')+'</span></div>'+
+    '<div class="row"><span class="lbl">标签</span>'+
+      quick.map(t=>'<button class="qtag'+(draftTags.indexOf(t)>=0?' on':'')+'" data-tag="'+t+'">'+t+'</button>').join('')+'</div>'+
+    '<textarea id="postText" maxlength="120" placeholder="一句话说说这家店（懒得打字就只点星星和标签）"></textarea>'+
+    '<div class="cta"><span class="rate-only" id="rateOnly">⭐ 只打分，不发帖</span>'+
+    '<button class="submit-btn" id="postSubmit">☁ 发布</button></div>'+
+    '<div class="auth-tip">'+(sb?'🔗 已连接云端数据库，你的评价会实时同步给所有同学':'💾 当前为本地演示模式，配置 Supabase 密钥后自动上云')+
+    ' · 同一设备重复打分会更新你原来的那一票</div>'+
+  '</div>';
+}
+
+/* ============================================================
+   ☁ 云端写入：发帖 / 打分 / 点赞
+   ============================================================ */
+
+/* ==== Supabase 修改处 ⑧：发帖 → posts.insert ==== */
+async function submitPost(s){
+  const ta = $('#postText');
+  const text = (ta ? ta.value : '').trim();
+  const stars = draftStars;
+  const tags = draftTags.slice();
+  if(!stars && !text){ toast('点个星星或写句话再发布呀 ⭐'); return; }
+
+  const content = text || (stars>=4 ? '亲测值得！' : stars>=3 ? '中规中矩，可以一试' : '个人不太行，仅供参考');
+  const btn = $('#postSubmit');
+  if(btn){ btn.disabled = true; btn.textContent = '发布中…'; }
+  cloudUI('busy','同步中');
+
+  try{
+    if(sb){
+      /* ---- ① 写入 posts 表 ---- */
+      const { error } = await sb.from('posts').insert({
+        shop_id  : s.id,
+        user_name: '我（SUAT-2026****）',
+        content  : content,
+        stars    : stars || 0,
+        tags     : tags,
+        likes    : 0
+      });
+      if(error) throw error;
+
+      /* ---- ② 顺带打分，写入 shops_ratings ---- */
+      if(stars) await submitRating(s, stars);
+
+      /* ---- ③ 重新拉取该店数据再渲染（以服务端为准）---- */
+      await refreshPosts(s.id);
+      await refreshRatings(s.id);
+    }else{
+      /* 本地演示模式 */
+      const post = {
+        pid:'p:local-' + Date.now(), remoteId:null, shopId:s.id,
+        u:'我（SUAT-2026****）', t:content, stars:stars||0, g:tags,
+        likes:0, time:'刚刚', remote:false, guide:false
+      };
+      const list = state.posts[s.id] || (state.posts[s.id] = []);
+      if(!list.some(p => p.pid === post.pid)) list.unshift(post);
+      if(stars) await submitRating(s, stars);
+    }
+
+    draftTags = [];
+    draftStars = 0;
+    const box = $('#postText');
+    if(box) box.value = '';          // 发布成功后清空输入框
+    store.save();
+    renderAll();
+    toast('🚀 发布成功！' + (sb ? '已同步到云端' : ''), 'ok');
+  }catch(e){
+    console.error('[Supabase] 发帖失败：', e);
+    toast('发布失败：' + (e.message || e));
+    if(btn){ btn.disabled = false; btn.textContent = '☁ 发布'; }
+  }finally{
+    cloudOk();
+  }
+}
+
+/* ==== Supabase 修改处 ⑨：打分 → shops_ratings.insert（同设备改为 update）==== */
+async function submitRating(s, stars){
+  const mine = state.myRatings[s.id] || null;
+
+  if(sb){
+    if(mine && mine.rowId){
+      /* 我已经打过分：update 原来那一行，避免平均分被重复计入 */
+      const { error } = await sb.from('shops_ratings').update({ rating: stars }).eq('id', mine.rowId);
+      if(error) throw error;
+      state.myRatings[s.id] = { rowId: mine.rowId, rating: stars };
+    }else{
+      const { data, error } = await sb.from('shops_ratings')
+        .insert({ shop_id: s.id, rating: stars })
+        .select('id').single();
+      if(error) throw error;
+      state.myRatings[s.id] = { rowId: data ? data.id : null, rating: stars };
+    }
+    /* ★ 重新拉取该店的评分行，重算最新平均分 */
+    await refreshRatings(s.id);
+  }else{
+    const arr = state.ratings[s.id] || (state.ratings[s.id] = []);
+    if(mine && mine.index != null){
+      arr[mine.index] = stars;
+      state.myRatings[s.id] = { index: mine.index, rating: stars };
+    }else{
+      state.myRatings[s.id] = { index: arr.length, rating: stars };
+      arr.push(stars);
+    }
+  }
+  store.save();
+}
+
+async function rateOnly(s){
+  if(!draftStars){ toast('先点个星星呀 ⭐'); return; }
+  cloudUI('busy','同步中');
+  try{
+    await submitRating(s, draftStars);
+    store.save();
+    renderAll();
+    const r = ratingOf(s);
+    toast('✅ 评分已记录 · ' + s.name + ' 现在是 ' + r.score.toFixed(1) + ' 分（' + r.count + ' 人）', 'ok');
+  }catch(e){
+    console.error('[Supabase] 打分失败：', e);
+    toast('打分失败：' + (e.message || e));
+  }finally{
+    cloudOk();
+  }
+}
+
+/* ==== Supabase 修改处 ⑩：点赞 → post_likes.insert + posts.likes 更新 ==== */
+let likingLock = {};
+
+async function toggleLike(pid, shopId, btn){
+  const post = findPost(shopId, pid);
+  if(!post){ toast('这条帖子找不到了'); return; }
+
+  /* 防刷：本地已记录过，直接拦下 */
+  if(isLiked(pid)){
+    toast('已经点过赞啦，同一帖子只能赞一次 ~');
+    return;
+  }
+  if(likingLock[pid]) return;
+  likingLock[pid] = true;
+
+  /* ---- 乐观更新：先让 UI 立刻 +1 并高亮 ---- */
+  state.myLikes.add(pid);
+  const before = likeTotal(post);
+  if(post.remote) post.likes = (post.likes || 0) + 1;
+  else state.guideLikes[pid] = (state.guideLikes[pid] || 0) + 1;
+
+  const node = btn || document.querySelector('.like-btn[data-like="' + pid + '"]');
+  paintLike(node, likeTotal(post), true, true);
+  store.save();
+
+  /* ---- 指南帖不在 posts 表里，点赞只存本地 ---- */
+  if(!post.remote || !sb){
+    if(btn) btn.disabled = false;
+    delete likingLock[pid];
+    if(!post.remote) toast('❤️ 点赞成功');
+    return;
+  }
+
+  /* ---- 云端帖：写 post_likes，再同步 posts.likes ---- */
+  try{
+    const { error } = await sb.from('post_likes').insert({
+      post_id   : post.remoteId,
+      visitor_id: VISITOR_ID
+    });
+
+    /* 23505 = 唯一约束冲突（换设备重刷也会被云端拦住）*/
+    if(error && error.code !== '23505') throw error;
+
+    if(!error){
+      const { error: e2 } = await sb.from('posts')
+        .update({ likes: post.likes })
+        .eq('id', post.remoteId);
+      if(e2) console.warn('[Supabase] posts.likes 同步失败：', e2);
+    }
+
+    if(btn) btn.disabled = false;
+    toast('❤️ 点赞成功');
+  }catch(e){
+    console.error('[Supabase] 点赞失败：', e);
+    /* 回滚乐观更新 */
+    state.myLikes.delete(pid);
+    post.likes = before;
+    paintLike(node, before, false, false);
+    store.save();
+    if(btn) btn.disabled = false;
+    toast('点赞失败：' + (e.message || e));
+  }finally{
+    delete likingLock[pid];
+  }
+}
+
+/* ============================================================
+   添加新店 → 写入 shops 表（带 visitor_id，仅自己可见）
+   ============================================================ */
+function fillAreaSelect(){
+  $('#fArea').innerHTML = AREAS.map(a=>'<option value="'+a.id+'">'+a.em+' '+a.name+'</option>').join('');
+  $('#fArea').value = activeArea;
+}
+
+/* ==== Supabase 修改处 ⑪：新增店铺 insert shops（visitor_id 必带）==== */
+async function submitAdd(){
+  const name = $('#fName').value.trim();
+  if(!name){ $('#addErr').classList.add('show'); return; }
+  $('#addErr').classList.remove('show');
+  const area = $('#fArea').value;
+  const dish = $('#fDish').value.trim();
+  const why  = $('#fWhy').value.trim();
+
+  const btn = $('#addSubmit');
+  if(btn){ btn.disabled = true; btn.textContent = '提交中…'; }
+  cloudUI('busy','同步中');
+
+  try{
+    let shop;
+    if(sb){
+      const { data, error } = await sb.from('shops').insert({
+        visitor_id: VISITOR_ID,     /* ★ 私有化的关键字段 */
+        area      : area,
+        name      : name,
+        dish      : dish,
+        why       : why
+      }).select('id, visitor_id, area, name, dish, why, created_at').single();
+      if(error) throw error;
+      shop = normalizeShop(data);
+    }else{
+      shop = {
+        id:'c_local_' + Date.now(), area, name, why,
+        dishes: dish
+          ? [{ n: dish.split('·')[0].trim(), p: dish.includes('·') ? dish.split('·').slice(1).join('·').trim() : '', h:1 }]
+          : []
+      };
+    }
+
+    state.custom.push(shop);
+    store.save();
+    closeModal('addMask');
+    $('#fName').value=''; $('#fDish').value=''; $('#fWhy').value='';
+    if(activeArea !== area) activeArea = area;      // 自动跳到新店所在板块
+    renderArea();
+    toast('🎉 新店已加入「'+areaOf(area).name+'」转盘！', 'ok');
+  }catch(e){
+    console.error('[Supabase] 添加店铺失败：', e);
+    toast('添加失败：' + (e.message || e));
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '➕ 提交并加入'; }
+    cloudOk();
+  }
+}
+
+/* ============================================================
+   弹窗
+   ============================================================ */
+function openModal(id){ $('#'+id).classList.add('show'); lock(true); }
+function closeModal(id){ $('#'+id).classList.remove('show'); lock(false); }
+
+/* ============================================================
+   总渲染
+   ============================================================ */
+function renderArea(){
+  renderNav();
+  buildWheel();
+  renderCards();
+  updateStats();
+}
+function renderAll(){
+  renderNav();
+  if(!SPIN.spinning) buildWheel();
+  renderCards();
+  updateStats();
+  if(currentDetail) refreshDrawerBody();
+}
+
+/* ============================================================
+   事件绑定
+   ============================================================ */
+$('#navToggle').addEventListener('click', ()=> $('#navPanel').classList.contains('show') ? closeNav() : openNav());
+$('#navMask').addEventListener('click', closeNav);
+$('#navList').addEventListener('click', e=>{
+  const b = e.target.closest('.nav-item');
+  if(b) switchArea(b.dataset.area);
+});
+$('#navAddBtn').addEventListener('click', ()=>{ closeNav(); fillAreaSelect(); openModal('addMask'); });
+$('#fabBtn').addEventListener('click', ()=>{ fillAreaSelect(); openModal('addMask'); });
+$('#spinBtn').addEventListener('click', spin);
+$('#wheelSvg').addEventListener('click', e=>{ if(e.target.closest('.wheel-hub-btn')) spin(); });
+
+document.querySelectorAll('.modal-mask').forEach(m=>{
+  m.addEventListener('click', e=>{
+    if(e.target===m || e.target.closest('[data-close]')) closeModal(m.id);
+  });
+});
+$('#addSubmit').addEventListener('click', submitAdd);
+$('#resOk').addEventListener('click', ()=>{ closeModal('resMask'); toast('🍚 就它了，冲！', 'ok'); });
+$('#resAgain').addEventListener('click', ()=>{ closeModal('resMask'); spin(); });
+$('#resDetail').addEventListener('click', ()=>{
+  const id = $('#resMask').dataset.shop;
+  closeModal('resMask');
+  setTimeout(()=>openDrawer(id), 200);
+});
+
+/* 抽屉 */
+$('#drawerMask').addEventListener('click', closeDrawer);
+$('#drBody').addEventListener('click', async e=>{
+  const s = currentDetail; if(!s) return;
+  const star = e.target.closest('.star-btn');
+  const tag  = e.target.closest('.qtag');
+  const like = e.target.closest('.like-btn');
+
+  if(star){
+    draftStars = +star.dataset.star;
+    refreshDrawerBodyPreserve();
+    return;
+  }
+  if(tag){
+    const t = tag.dataset.tag;
+    const i = draftTags.indexOf(t);
+    if(i>=0) draftTags.splice(i,1); else draftTags.push(t);
+    refreshDrawerBodyPreserve();
+    return;
+  }
+  if(like){
+    e.preventDefault();
+    like.disabled = true;
+    await toggleLike(like.dataset.like, s.id, like);
+    like.disabled = false;
+    return;
+  }
+  if(e.target.closest('#postSubmit')){ await submitPost(s); return; }
+  if(e.target.closest('#rateOnly')){ await rateOnly(s); return; }
+  const ft = e.target.closest('.ftab');
+  if(ft){ feedTab = ft.dataset.ft; refreshDrawerBodyPreserve(); return; }
+});
+
+/* 打分 / 选标签后重绘，但保住用户已经打好的文字 */
+function refreshDrawerBodyPreserve(){
+  const s = currentDetail; if(!s) return;
+  const ta = $('#postText');
+  const txt = ta ? ta.value : '';
+  const body = $('#drBody');
+  const sc = body.scrollTop;
+  renderDrawerBody(s);
+  body.scrollTop = sc;
+  const nt = $('#postText');
+  if(nt && txt) nt.value = txt;
+}
+
+$('#drHead').addEventListener('click', e=>{ if(e.target.closest('.dr-close')) closeDrawer(); });
+$('#cardFlow').addEventListener('click', e=>{
+  if(e.target.closest('#emptyAdd')){ fillAreaSelect(); openModal('addMask'); return; }
+  const card = e.target.closest('.food-card');
+  if(card) openDrawer(card.dataset.shop);
+});
+
+/* ============================================================
+   初始化
+   ============================================================ */
+store.load();
+renderArea();
+
+if(sb){
+  /* 先展示本地缓存，再拉云端覆盖，避免白屏 */
+  document.getElementById('cardFlow').classList.add('loading');
+  cloudUI('busy','连接云端');
+  fetchAll().then(ok=>{
+    subscribeRealtime();
+    renderAll();
+    if(ok){
+      let total = 0;
+      Object.keys(state.posts).forEach(k => total += state.posts[k].length);
+      setTimeout(()=>toast('☁ 云端已连接 · 共 ' + total + ' 条同学评价'), 600);
+    }
+  });
+}else{
+  cloudOk();
+  let tipped = false;
+  try{ tipped = !!localStorage.getItem('suaterfood.tips.shown'); }catch(e){}
+  if(!tipped){
+    try{ localStorage.setItem('suaterfood.tips.shown','1'); }catch(e){}
+    setTimeout(()=>toast('💡 未配置 Supabase，当前为本地演示模式（照常可以评分发帖）'), 700);
+  }
+}
+</script>
+</body>
+</html>
